@@ -1,0 +1,14 @@
+defmodule GroupStay.Groups.FinanceReporting do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "finance_reporting" do
+    field :starts_on, :date
+    field :start_operation_id, :string
+    field :opening_credit_liability_cents, :integer
+  end
+
+  def changeset(reporting, attrs) do
+    cast(reporting, attrs, [:starts_on, :start_operation_id, :opening_credit_liability_cents])
+  end
+end

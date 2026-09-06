@@ -1,0 +1,480 @@
+defmodule GroupStay.Operations do
+  @moduledoc """
+  Applies partner operations to group reservations.
+
+  Each operation is applied inside its own transaction: applied operations
+  commit and rejected operations leave the database unchanged.
+  """
+
+  alias GroupStay.{Group, Groups, Repo, Room}
+
+  import Ecto.Query
+
+  @rate_plans ~w(flexible advance_purchase)
+
+  @doc """
+  Applies a batch of operations in array order, returning one result per
+  operation in the same order.
+  """
+  @spec apply_all(list()) :: list(map())
+  def apply_all(operations) when is_list(operations) do
+    Enum.map(operations, &apply_in_transaction/1)
+  end
+
+  defp apply_in_transaction(op) do
+    try do
+      case Repo.transaction(fn -> apply(op) end) do
+        {:ok, result} -> result
+        {:error, result} when is_map(result) -> result
+        {:error, _reason} -> reject(op, "invalid_operation")
+      end
+    rescue
+      _unexpected -> reject(op, "invalid_operation")
+    catch
+      :exit, _reason -> reject(op, "invalid_operation")
+    end
+  end
+
+  defp apply(op) when not is_map(op), do: reject(nil, "invalid_operation")
+
+  defp apply(%{"type" => type} = op) do
+    case type do
+      "open_group" -> apply_open_group(op)
+      "record_cash_payment" -> apply_payment(op)
+      "reschedule_group" -> apply_reschedule(op)
+      "cancel_group" -> apply_cancel(op)
+      _other -> reject(op, "invalid_operation")
+    end
+  end
+
+  defp apply(op), do: reject(op, "invalid_operation")
+
+  ## Opening a group
+
+  defp apply_open_group(op) do
+    with {:ok, operation_id} <- fetch_string(op, "operation_id"),
+         {:ok, group_id} <- fetch_string(op, "group_id"),
+         {:ok, guest_id} <- fetch_string(op, "guest_id"),
+         {:ok, property_id} <- fetch_string(op, "property_id"),
+         {:ok, rate_plan} <- fetch_string(op, "rate_plan", "invalid_rate_plan"),
+         {:ok, booked_on} <- fetch_date(op, "occurred_on"),
+         {:ok, arrival_on} <- fetch_date(op, "arrival_on"),
+         {:ok, departure_on} <- fetch_date(op, "departure_on"),
+         {:ok, rooms} <- fetch_rooms(op) do
+      open_group(
+        op,
+        operation_id,
+        group_id,
+        guest_id,
+        property_id,
+        rate_plan,
+        booked_on,
+        arrival_on,
+        departure_on,
+        rooms
+      )
+    else
+      {:error, code} -> reject(op, code)
+    end
+  end
+
+  defp open_group(
+         op,
+         operation_id,
+         group_id,
+         guest_id,
+         property_id,
+         rate_plan,
+         booked_on,
+         arrival_on,
+         departure_on,
+         rooms
+       ) do
+    cond do
+      Groups.fetch(group_id) ->
+        reject(op, "group_already_exists")
+
+      Date.diff(departure_on, arrival_on) < 1 ->
+        reject(op, "invalid_stay")
+
+      rate_plan not in @rate_plans ->
+        reject(op, "invalid_rate_plan")
+
+      not unique_room_ids?(rooms) ->
+        reject(op, "invalid_rooms")
+
+      true ->
+        create_group(
+          op,
+          operation_id,
+          group_id,
+          guest_id,
+          property_id,
+          rate_plan,
+          booked_on,
+          arrival_on,
+          departure_on,
+          rooms
+        )
+    end
+  end
+
+  defp create_group(
+         op,
+         operation_id,
+         group_id,
+         guest_id,
+         property_id,
+         rate_plan,
+         booked_on,
+         arrival_on,
+         departure_on,
+         rooms
+       ) do
+    nights = Date.diff(departure_on, arrival_on)
+
+    room_changesets =
+      rooms
+      |> Enum.with_index(1)
+      |> Enum.map(fn {room, position} ->
+        lodging_cents = nights * room["nightly_rate_cents"]
+
+        %Room{
+          room_id: room["room_id"],
+          nightly_rate_cents: room["nightly_rate_cents"],
+          lodging_cents: lodging_cents,
+          deposit_cents: room_deposit(lodging_cents, rate_plan),
+          position: position
+        }
+      end)
+
+    %Group{
+      group_id: group_id,
+      guest_id: guest_id,
+      property_id: property_id,
+      booked_on: booked_on,
+      arrival_on: arrival_on,
+      departure_on: departure_on,
+      rate_plan: rate_plan,
+      status: "active",
+      revision: 1,
+      deposit_paid_cents: 0,
+      refunded_cents: 0,
+      retained_cents: 0
+    }
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.put_assoc(:rooms, room_changesets)
+    |> Repo.insert!()
+
+    %{
+      "operation_id" => operation_id,
+      "status" => "applied",
+      "group_id" => group_id,
+      "deposit_due_cents" => sum_deposits(room_changesets),
+      "revision" => 1
+    }
+  rescue
+    _unexpected -> Repo.rollback(reject(op, "invalid_operation"))
+  end
+
+  ## Recording cash
+
+  defp apply_payment(op) do
+    with {:ok, operation_id} <- fetch_string(op, "operation_id"),
+         {:ok, group_id} <- fetch_string(op, "group_id"),
+         {:ok, _occurred_on} <- fetch_date(op, "occurred_on"),
+         {:ok, amount_cents} <- fetch_positive_integer(op, "amount_cents", "invalid_amount") do
+      pay_group(op, operation_id, group_id, amount_cents)
+    else
+      {:error, code} -> reject(op, code)
+    end
+  end
+
+  defp pay_group(op, _operation_id, group_id, _amount_cents) do
+    case Groups.fetch(group_id) do
+      nil -> reject(op, "group_not_found")
+      group -> payment_result(op, group)
+    end
+  end
+
+  defp payment_result(op, group) do
+    amount_cents = op["amount_cents"]
+
+    with :ok <- expected_revision_check(op, group) do
+      outstanding = Groups.outstanding_deposit_cents(group)
+
+      cond do
+        group.status != "active" ->
+          reject(op, "group_not_active")
+
+        amount_cents <= 0 ->
+          reject(op, "invalid_amount")
+
+        amount_cents > outstanding ->
+          reject(op, "payment_exceeds_outstanding")
+
+        true ->
+          new_revision = group.revision + 1
+
+          Repo.update_all(
+            from(g in Group, where: g.id == ^group.id),
+            inc: [revision: 1, deposit_paid_cents: amount_cents]
+          )
+
+          %{
+            "operation_id" => op["operation_id"],
+            "status" => "applied",
+            "group_id" => op["group_id"],
+            "amount_cents" => amount_cents,
+            "outstanding_deposit_cents" => outstanding - amount_cents,
+            "revision" => new_revision
+          }
+      end
+    else
+      {:error, result} -> result
+    end
+  end
+
+  ## Rescheduling
+
+  defp apply_reschedule(op) do
+    with {:ok, operation_id} <- fetch_string(op, "operation_id"),
+         {:ok, group_id} <- fetch_string(op, "group_id"),
+         {:ok, occurred_on} <- fetch_date(op, "occurred_on"),
+         {:ok, new_arrival_on} <- fetch_date(op, "new_arrival_on") do
+      reschedule_group(op, operation_id, group_id, occurred_on, new_arrival_on)
+    else
+      {:error, code} -> reject(op, code)
+    end
+  end
+
+  defp reschedule_group(op, operation_id, group_id, occurred_on, new_arrival_on) do
+    case Groups.fetch(group_id) do
+      nil -> reject(op, "group_not_found")
+      group -> reschedule_result(op, operation_id, group, occurred_on, new_arrival_on)
+    end
+  end
+
+  defp reschedule_result(op, operation_id, group, occurred_on, new_arrival_on) do
+    with :ok <- expected_revision_check(op, group) do
+      cond do
+        group.status != "active" ->
+          reject(op, "group_not_active")
+
+        Date.compare(new_arrival_on, occurred_on) != :gt ->
+          reject(op, "invalid_stay")
+
+        true ->
+          nights = Date.diff(group.departure_on, group.arrival_on)
+          new_departure_on = Date.add(new_arrival_on, nights)
+          new_revision = group.revision + 1
+
+          Repo.update_all(
+            from(g in Group, where: g.id == ^group.id),
+            set: [arrival_on: new_arrival_on, departure_on: new_departure_on],
+            inc: [revision: 1]
+          )
+
+          %{
+            "operation_id" => operation_id,
+            "status" => "applied",
+            "group_id" => group.group_id,
+            "new_arrival_on" => new_arrival_on,
+            "new_departure_on" => new_departure_on,
+            "revision" => new_revision
+          }
+      end
+    else
+      {:error, result} -> result
+    end
+  end
+
+  ## Cancelling
+
+  defp apply_cancel(op) do
+    with {:ok, operation_id} <- fetch_string(op, "operation_id"),
+         {:ok, group_id} <- fetch_string(op, "group_id"),
+         {:ok, occurred_on} <- fetch_date(op, "occurred_on") do
+      cancel_group(op, operation_id, group_id, occurred_on)
+    else
+      {:error, code} -> reject(op, code)
+    end
+  end
+
+  defp cancel_group(op, operation_id, group_id, occurred_on) do
+    case Groups.fetch(group_id) do
+      nil -> reject(op, "group_not_found")
+      group -> cancel_result(op, operation_id, group, occurred_on)
+    end
+  end
+
+  defp cancel_result(op, operation_id, group, occurred_on) do
+    with :ok <- expected_revision_check(op, group) do
+      if group.status != "active" do
+        reject(op, "group_not_active")
+      else
+        refunded_cents = if refundable?(group, occurred_on), do: group.deposit_paid_cents, else: 0
+        retained_cents = group.deposit_paid_cents - refunded_cents
+        new_revision = group.revision + 1
+
+        Repo.update_all(
+          from(g in Group, where: g.id == ^group.id),
+          set: [
+            status: "cancelled",
+            refunded_cents: refunded_cents,
+            retained_cents: retained_cents
+          ],
+          inc: [revision: 1]
+        )
+
+        %{
+          "operation_id" => operation_id,
+          "status" => "applied",
+          "group_id" => group.group_id,
+          "refunded_cents" => refunded_cents,
+          "retained_cents" => retained_cents,
+          "revision" => new_revision
+        }
+      end
+    else
+      {:error, result} -> result
+    end
+  end
+
+  defp refundable?(%Group{rate_plan: "flexible"} = group, occurred_on) do
+    Date.diff(group.arrival_on, occurred_on) >= 14
+  end
+
+  defp refundable?(%Group{}, _occurred_on), do: false
+
+  ## Expected revision contract
+
+  defp expected_revision_check(op, %Group{} = group) do
+    case op do
+      %{"expected_revision" => expected} when not is_nil(expected) ->
+        if expected == group.revision do
+          :ok
+        else
+          {:error,
+           reject(op, "stale_revision",
+             expected_revision: expected,
+             actual_revision: group.revision
+           )}
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  ## Field extraction and validation
+
+  defp fetch_string(op, key, invalid_code \\ "invalid_operation") do
+    case op do
+      %{^key => value} when is_binary(value) -> {:ok, value}
+      %{^key => nil} -> {:error, "invalid_operation"}
+      %{^key => _value} -> {:error, invalid_code}
+      _missing -> {:error, "invalid_operation"}
+    end
+  end
+
+  defp fetch_date(op, key) do
+    case op do
+      %{^key => value} when is_binary(value) ->
+        case Date.from_iso8601(value) do
+          {:ok, date} -> {:ok, date}
+          {:error, _reason} -> {:error, "invalid_stay"}
+        end
+
+      %{^key => nil} ->
+        {:error, "invalid_operation"}
+
+      %{^key => _value} ->
+        {:error, "invalid_stay"}
+
+      _missing ->
+        {:error, "invalid_operation"}
+    end
+  end
+
+  defp fetch_positive_integer(op, key, invalid_code) do
+    case op do
+      %{^key => value} when is_integer(value) -> {:ok, value}
+      %{^key => nil} -> {:error, "invalid_operation"}
+      %{^key => _value} -> {:error, invalid_code}
+      _missing -> {:error, "invalid_operation"}
+    end
+  end
+
+  defp fetch_rooms(op) do
+    case op do
+      %{"rooms" => rooms} when is_list(rooms) -> parse_rooms(rooms)
+      %{"rooms" => _rooms} -> {:error, "invalid_rooms"}
+      _missing -> {:error, "invalid_operation"}
+    end
+  end
+
+  defp parse_rooms(rooms) do
+    case Enum.reduce_while(rooms, {:ok, []}, &collect_room/2) do
+      {:ok, []} -> {:error, "invalid_rooms"}
+      {:ok, rev_rooms} -> {:ok, Enum.reverse(rev_rooms)}
+      {:error, _code} = error -> error
+    end
+  end
+
+  defp collect_room(room, {:ok, acc}) do
+    case parse_room(room) do
+      {:ok, attrs} -> {:cont, {:ok, [attrs | acc]}}
+      {:error, code} -> {:halt, {:error, code}}
+    end
+  end
+
+  defp parse_room(room) when is_map(room) do
+    with {:ok, room_id} <- fetch_string(room, "room_id", "invalid_rooms"),
+         {:ok, nightly_rate_cents} <-
+           fetch_positive_integer(room, "nightly_rate_cents", "invalid_rooms"),
+         true <- nightly_rate_cents > 0 do
+      {:ok, %{"room_id" => room_id, "nightly_rate_cents" => nightly_rate_cents}}
+    else
+      {:error, code} -> {:error, code}
+      false -> {:error, "invalid_rooms"}
+    end
+  end
+
+  defp parse_room(_not_a_map), do: {:error, "invalid_rooms"}
+
+  defp unique_room_ids?(rooms) do
+    ids = Enum.map(rooms, & &1["room_id"])
+    length(ids) == ids |> Enum.uniq() |> length()
+  end
+
+  ## Deposit calculation
+
+  # A flexible room requires 20% of its lodging amount, rounded per room to
+  # the nearest cent with exact half-cents rounded upward.
+  defp room_deposit(lodging_cents, "flexible"), do: div(lodging_cents * 2 + 5, 10)
+  defp room_deposit(lodging_cents, "advance_purchase"), do: lodging_cents
+
+  defp sum_deposits(rooms), do: rooms |> Enum.map(& &1.deposit_cents) |> Enum.sum()
+
+  ## Rejections
+
+  defp reject(op, code, extra \\ []) when is_list(extra) do
+    %{"status" => "rejected", "code" => code}
+    |> put_operation_id(op)
+    |> put_group_id(op)
+    |> Map.merge(Map.new(extra))
+  end
+
+  defp put_operation_id(result, %{"operation_id" => operation_id}) when is_binary(operation_id) do
+    Map.put(result, "operation_id", operation_id)
+  end
+
+  defp put_operation_id(result, _op), do: result
+
+  defp put_group_id(result, %{"group_id" => group_id}) when is_binary(group_id) do
+    Map.put(result, "group_id", group_id)
+  end
+
+  defp put_group_id(result, _op), do: result
+end

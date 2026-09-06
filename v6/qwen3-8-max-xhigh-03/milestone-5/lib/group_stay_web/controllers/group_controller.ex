@@ -1,0 +1,55 @@
+defmodule GroupStayWeb.GroupController do
+  use GroupStayWeb, :controller
+
+  alias GroupStay.Groups
+
+  def show(conn, %{"group_id" => group_id}) do
+    case Groups.get_group(group_id) do
+      nil ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: %{code: "group_not_found"}})
+
+      group ->
+        json(conn, %{data: group_json(group)})
+    end
+  end
+
+  defp group_json(group) do
+    paid_by_room = Groups.paid_by_room(group.group_id)
+
+    %{
+      group_id: group.group_id,
+      guest_id: group.guest_id,
+      property_id: group.property_id,
+      revision: group.revision,
+      booked_on: group.booked_on,
+      arrival_on: group.arrival_on,
+      departure_on: group.departure_on,
+      rate_plan: group.rate_plan,
+      status: group.status,
+      policy_version: Groups.policy_version(group),
+      refundable_until: Groups.refundable_until(group),
+      rooms: Enum.map(group.rooms, &room_json(&1, paid_by_room)),
+      lodging_total_cents: group.lodging_total_cents,
+      deposit_due_cents: group.deposit_due_cents,
+      deposit_paid_cents: group.deposit_paid_cents,
+      cash_paid_cents: Groups.cash_paid_cents(group),
+      credit_paid_cents: group.credit_paid_cents,
+      outstanding_deposit_cents: Groups.outstanding_deposit_cents(group)
+    }
+  end
+
+  defp room_json(room, paid_by_room) do
+    paid = Map.get(paid_by_room, room.id, %{cash: 0, credit: 0})
+
+    %{
+      room_id: room.room_id,
+      nightly_rate_cents: room.nightly_rate_cents,
+      status: room.status,
+      deposit_due_cents: room.deposit_due_cents,
+      cash_paid_cents: paid.cash,
+      credit_paid_cents: paid.credit
+    }
+  end
+end

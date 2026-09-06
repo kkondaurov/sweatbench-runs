@@ -1,0 +1,712 @@
+defmodule GroupStay.Operations do
+  import Ecto.Query
+
+  alias GroupStay.CreditAllocation
+  alias GroupStay.CreditLot
+  alias GroupStay.Groups.Group
+  alias GroupStay.Groups.Room
+  alias GroupStay.Ledger
+  alias GroupStay.OperationRecord
+  alias GroupStay.Repo
+
+  @operation_types ~w(
+    open_group
+    record_cash_payment
+    apply_hotel_credit
+    reschedule_group
+    cancel_group
+  )
+  @policy_cutover ~D[2027-01-01]
+
+  def process(operation) when is_map(operation) do
+    operation_id = value(operation, "operation_id")
+
+    if valid_identifier?(operation_id) do
+      process_durably(operation, operation_id, canonical_payload(operation))
+    else
+      rejection(operation_id, "invalid_operation")
+    end
+  end
+
+  def process(_operation), do: rejection(nil, "invalid_operation")
+
+  def get(operation_id) when is_binary(operation_id) do
+    case Repo.get_by(OperationRecord, operation_id: operation_id) do
+      nil -> :not_found
+      record -> {:ok, restore_result(record.result)}
+    end
+  end
+
+  defp process_durably(operation, operation_id, payload) do
+    Repo.transaction(fn ->
+      case claim_operation(operation_id, operation, payload) do
+        {:new, record} ->
+          result = process_uncached(operation, operation_id)
+          persist_result!(record, result)
+          result
+
+        {:existing, record} ->
+          if record.payload === payload do
+            restore_result(record.result)
+          else
+            rejection(operation_id, "operation_id_conflict")
+          end
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, result} -> result
+    end
+  end
+
+  defp claim_operation(operation_id, operation, payload) do
+    {count, _rows} =
+      Repo.insert_all(
+        OperationRecord,
+        [
+          %{
+            operation_id: operation_id,
+            type: stored_type(value(operation, "type")),
+            payload: payload
+          }
+        ],
+        on_conflict: :nothing,
+        conflict_target: [:operation_id]
+      )
+
+    record = Repo.get_by!(OperationRecord, operation_id: operation_id)
+
+    if count == 1 do
+      {:new, record}
+    else
+      {:existing, record}
+    end
+  end
+
+  defp persist_result!(record, result) do
+    {:ok, _record} =
+      Repo.update(OperationRecord.changeset(record, %{result: canonical_payload(result)}))
+  end
+
+  defp restore_result(result) when is_map(result) do
+    Map.new(result, fn {key, value} -> {result_key(key), restore_result(value)} end)
+  end
+
+  defp restore_result(result) when is_list(result), do: Enum.map(result, &restore_result/1)
+  defp restore_result(result), do: result
+
+  defp result_key(key) when is_binary(key) do
+    String.to_existing_atom(key)
+  rescue
+    ArgumentError -> key
+  end
+
+  defp result_key(key), do: key
+
+  defp process_uncached(operation, operation_id) do
+    type = value(operation, "type")
+
+    cond do
+      type == "open_group" -> process_open(operation, operation_id)
+      type in @operation_types -> process_existing(operation, operation_id, type)
+      true -> rejection(operation_id, "invalid_operation")
+    end
+  end
+
+  defp process_open(operation, operation_id) do
+    required = [
+      "occurred_on",
+      "group_id",
+      "guest_id",
+      "property_id",
+      "arrival_on",
+      "departure_on",
+      "rate_plan",
+      "rooms"
+    ]
+
+    if not present?(operation, required) do
+      rejection(operation_id, "invalid_operation")
+    else
+      group_id = value(operation, "group_id")
+
+      if not valid_identifier?(group_id) or
+           not valid_identifier?(value(operation, "guest_id")) or
+           not valid_identifier?(value(operation, "property_id")) do
+        rejection(operation_id, "invalid_operation", %{group_id: group_id})
+      else
+        open_group(operation, operation_id, group_id)
+      end
+    end
+  end
+
+  defp open_group(operation, operation_id, group_id) do
+    if Repo.get(Group, group_id) do
+      rejection(operation_id, "group_already_exists", %{group_id: group_id})
+    else
+      with {:ok, booked_on} <- parse_date(value(operation, "occurred_on")),
+           {:ok, arrival_on} <- parse_date(value(operation, "arrival_on")),
+           {:ok, departure_on} <- parse_date(value(operation, "departure_on")),
+           :ok <- validate_stay(arrival_on, departure_on),
+           {:ok, rate_plan} <- validate_rate_plan(value(operation, "rate_plan")),
+           {:ok, rooms} <- validate_rooms(value(operation, "rooms")) do
+        nights = Date.diff(departure_on, arrival_on)
+
+        lodging_total =
+          Enum.reduce(rooms, 0, fn room, total -> total + room.lodging_cents * nights end)
+
+        deposit_due = calculate_deposit(rooms, nights, rate_plan)
+        policy_version = policy_version(rate_plan, booked_on)
+        refundable_until = refundable_until(policy_version, arrival_on)
+
+        group_attrs = %{
+          group_id: group_id,
+          guest_id: value(operation, "guest_id"),
+          property_id: value(operation, "property_id"),
+          booked_on: booked_on,
+          arrival_on: arrival_on,
+          departure_on: departure_on,
+          rate_plan: rate_plan,
+          policy_version: policy_version,
+          refundable_until: refundable_until,
+          status: "active",
+          revision: 1,
+          lodging_total_cents: lodging_total,
+          deposit_due_cents: deposit_due,
+          deposit_paid_cents: 0,
+          cash_paid_cents: 0,
+          credit_paid_cents: 0
+        }
+
+        case Repo.insert(Group.changeset(%Group{}, group_attrs)) do
+          {:ok, _group} ->
+            room_rows =
+              Enum.with_index(rooms, 1)
+              |> Enum.map(fn {room, position} ->
+                %{
+                  group_id: group_id,
+                  position: position,
+                  room_id: room.room_id,
+                  nightly_rate_cents: room.nightly_rate_cents
+                }
+              end)
+
+            Repo.insert_all(Room, room_rows)
+
+            applied(operation_id, %{
+              group_id: group_id,
+              deposit_due_cents: deposit_due,
+              revision: 1
+            })
+
+          {:error, _changeset} ->
+            rejection(operation_id, "group_already_exists", %{group_id: group_id})
+        end
+      else
+        {:error, code} -> rejection(operation_id, code, %{group_id: group_id})
+      end
+    end
+  end
+
+  defp process_existing(operation, operation_id, type) do
+    group_id = value(operation, "group_id")
+
+    if not valid_identifier?(group_id) do
+      rejection(operation_id, "invalid_operation")
+    else
+      existing_operation(operation, operation_id, type, group_id)
+    end
+  end
+
+  defp existing_operation(operation, operation_id, type, group_id) do
+    case Repo.get(Group, group_id) do
+      nil ->
+        rejection(operation_id, "group_not_found", %{group_id: group_id})
+
+      group ->
+        case check_revision(operation, group) do
+          :ok ->
+            if group.status != "active" do
+              rejection(operation_id, "group_not_active", %{group_id: group_id})
+            else
+              apply_existing(operation, operation_id, type, group)
+            end
+
+          {:error, :invalid_operation} ->
+            rejection(operation_id, "invalid_operation", %{group_id: group_id})
+
+          {:error, :stale_revision, expected_revision} ->
+            rejection(operation_id, "stale_revision", %{
+              group_id: group_id,
+              expected_revision: expected_revision,
+              actual_revision: group.revision
+            })
+        end
+    end
+  end
+
+  defp apply_existing(operation, operation_id, "record_cash_payment", group) do
+    if not present?(operation, ["occurred_on", "amount_cents"]) do
+      rejection(operation_id, "invalid_operation", %{group_id: group.group_id})
+    else
+      with {:ok, _occurred_on} <- parse_date(value(operation, "occurred_on")),
+           :ok <- validate_amount(value(operation, "amount_cents")) do
+        amount = value(operation, "amount_cents")
+        outstanding = outstanding(group)
+
+        if amount > outstanding do
+          rejection(operation_id, "payment_exceeds_outstanding", %{group_id: group.group_id})
+        else
+          update_group!(group, %{
+            deposit_paid_cents: deposit_paid(group) + amount,
+            cash_paid_cents: cash_paid(group) + amount
+          })
+
+          applied(operation_id, %{
+            group_id: group.group_id,
+            amount_cents: amount,
+            outstanding_deposit_cents: outstanding - amount,
+            revision: group.revision + 1
+          })
+        end
+      else
+        {:error, code} -> rejection(operation_id, code, %{group_id: group.group_id})
+      end
+    end
+  end
+
+  defp apply_existing(operation, operation_id, "apply_hotel_credit", group) do
+    if not present?(operation, ["occurred_on", "amount_cents"]) do
+      rejection(operation_id, "invalid_operation", %{group_id: group.group_id})
+    else
+      with {:ok, occurred_on} <- parse_date(value(operation, "occurred_on")),
+           :ok <- validate_amount(value(operation, "amount_cents")) do
+        amount = value(operation, "amount_cents")
+        outstanding = outstanding(group)
+
+        cond do
+          amount > outstanding ->
+            rejection(operation_id, "payment_exceeds_outstanding", %{group_id: group.group_id})
+
+          available_credit(group.guest_id, occurred_on) < amount ->
+            rejection(operation_id, "insufficient_credit", %{group_id: group.group_id})
+
+          true ->
+            allocate_credit!(group, amount, occurred_on)
+
+            update_group!(group, %{
+              deposit_paid_cents: deposit_paid(group) + amount,
+              credit_paid_cents: credit_paid(group) + amount
+            })
+
+            applied(operation_id, %{
+              group_id: group.group_id,
+              amount_cents: amount,
+              outstanding_deposit_cents: outstanding - amount,
+              revision: group.revision + 1
+            })
+        end
+      else
+        {:error, code} -> rejection(operation_id, code, %{group_id: group.group_id})
+      end
+    end
+  end
+
+  defp apply_existing(operation, operation_id, "reschedule_group", group) do
+    if not present?(operation, ["occurred_on", "new_arrival_on"]) do
+      rejection(operation_id, "invalid_operation", %{group_id: group.group_id})
+    else
+      with {:ok, occurred_on} <- parse_date(value(operation, "occurred_on")),
+           {:ok, new_arrival_on} <- parse_date(value(operation, "new_arrival_on")),
+           :ok <- validate_new_stay(occurred_on, new_arrival_on) do
+        stay_length = Date.diff(group.departure_on, group.arrival_on)
+        new_departure_on = Date.add(new_arrival_on, stay_length)
+        policy = policy_for_group(group)
+        new_refundable_until = refundable_until(policy, new_arrival_on)
+
+        update_group!(group, %{
+          arrival_on: new_arrival_on,
+          departure_on: new_departure_on,
+          policy_version: policy,
+          refundable_until: new_refundable_until
+        })
+
+        applied(operation_id, %{
+          group_id: group.group_id,
+          new_arrival_on: Date.to_iso8601(new_arrival_on),
+          new_departure_on: Date.to_iso8601(new_departure_on),
+          policy_version: policy,
+          refundable_until: format_date(new_refundable_until),
+          revision: group.revision + 1
+        })
+      else
+        {:error, code} -> rejection(operation_id, code, %{group_id: group.group_id})
+      end
+    end
+  end
+
+  defp apply_existing(operation, operation_id, "cancel_group", group) do
+    if not present?(operation, ["occurred_on"]) do
+      rejection(operation_id, "invalid_operation", %{group_id: group.group_id})
+    else
+      with {:ok, occurred_on} <- parse_date(value(operation, "occurred_on")),
+           {:ok, refund_method} <- refund_method(operation) do
+        refundable? = refundable?(group, occurred_on)
+
+        if refund_method == "hotel_credit" and not refundable? do
+          rejection(operation_id, "refund_method_not_available", %{group_id: group.group_id})
+        else
+          settle_cancellation!(group, operation_id, occurred_on, refund_method, refundable?)
+        end
+      else
+        {:error, code} -> rejection(operation_id, code, %{group_id: group.group_id})
+      end
+    end
+  end
+
+  defp settle_cancellation!(group, operation_id, occurred_on, refund_method, refundable?) do
+    cash = cash_paid(group)
+
+    {refunded, retained, converted, credit_issued} =
+      cond do
+        refundable? and refund_method == "hotel_credit" ->
+          credit_issued = issue_credit!(group.guest_id, operation_id, cash, occurred_on)
+          restore_credit_allocations!(group, occurred_on)
+          {0, 0, cash, credit_issued}
+
+        refundable? ->
+          restore_credit_allocations!(group, occurred_on)
+          {cash, 0, 0, 0}
+
+        true ->
+          consume_credit_allocations!(group)
+          {0, cash, 0, 0}
+      end
+
+    update_group!(group, %{status: "cancelled"})
+    update_ledger!(refunded, retained, converted)
+
+    applied(operation_id, %{
+      group_id: group.group_id,
+      refunded_cents: refunded,
+      retained_cents: retained,
+      credit_issued_cents: credit_issued,
+      revision: group.revision + 1
+    })
+  end
+
+  defp allocate_credit!(group, amount, occurred_on) do
+    lots = available_credit_lots(group.guest_id, occurred_on)
+
+    {remaining, _lots} =
+      Enum.reduce_while(lots, {amount, []}, fn lot, {remaining, used} ->
+        allocation_amount = min(remaining, lot.remaining_cents)
+
+        update_lot!(lot, %{remaining_cents: lot.remaining_cents - allocation_amount})
+        upsert_allocation!(group.group_id, lot.id, allocation_amount)
+
+        if allocation_amount == remaining do
+          {:halt, {0, [lot | used]}}
+        else
+          {:cont, {remaining - allocation_amount, [lot | used]}}
+        end
+      end)
+
+    if remaining != 0, do: raise("credit allocation became incomplete")
+  end
+
+  defp upsert_allocation!(group_id, credit_lot_id, amount) do
+    case Repo.get_by(CreditAllocation, group_id: group_id, credit_lot_id: credit_lot_id) do
+      nil ->
+        {:ok, _allocation} =
+          Repo.insert(
+            CreditAllocation.changeset(%CreditAllocation{}, %{
+              group_id: group_id,
+              credit_lot_id: credit_lot_id,
+              amount_cents: amount
+            })
+          )
+
+      allocation ->
+        {:ok, _allocation} =
+          Repo.update(
+            CreditAllocation.changeset(allocation, %{
+              amount_cents: allocation.amount_cents + amount
+            })
+          )
+    end
+  end
+
+  defp restore_credit_allocations!(group, occurred_on) do
+    allocations_with_lots(group.group_id)
+    |> Enum.each(fn {allocation, lot} ->
+      if Date.compare(occurred_on, lot.expires_on) == :lt do
+        update_lot!(lot, %{remaining_cents: lot.remaining_cents + allocation.amount_cents})
+      end
+
+      Repo.delete!(allocation)
+    end)
+  end
+
+  defp consume_credit_allocations!(group) do
+    allocations_with_lots(group.group_id)
+    |> Enum.each(fn {allocation, _lot} -> Repo.delete!(allocation) end)
+  end
+
+  defp allocations_with_lots(group_id) do
+    Repo.all(
+      from allocation in CreditAllocation,
+        join: lot in CreditLot,
+        on: lot.id == allocation.credit_lot_id,
+        where: allocation.group_id == ^group_id,
+        select: {allocation, lot}
+    )
+  end
+
+  defp issue_credit!(_guest_id, _operation_id, 0, _occurred_on), do: 0
+
+  defp issue_credit!(guest_id, operation_id, cash, occurred_on) do
+    bonus = round_percentage(cash, 10, 100)
+    credit_issued = cash + bonus
+
+    {:ok, _lot} =
+      Repo.insert(
+        CreditLot.changeset(%CreditLot{}, %{
+          guest_id: guest_id,
+          source_operation_id: operation_id,
+          remaining_cents: credit_issued,
+          expires_on: Date.add(occurred_on, 366)
+        })
+      )
+
+    credit_issued
+  end
+
+  defp update_lot!(lot, attrs) do
+    {:ok, _lot} = Repo.update(CreditLot.changeset(lot, attrs))
+  end
+
+  defp available_credit(guest_id, as_of) do
+    available_credit_lots(guest_id, as_of)
+    |> Enum.reduce(0, fn lot, total -> total + lot.remaining_cents end)
+  end
+
+  defp available_credit_lots(guest_id, as_of) do
+    Repo.all(
+      from lot in CreditLot,
+        where:
+          lot.guest_id == ^guest_id and lot.remaining_cents > 0 and
+            lot.expires_on > ^as_of,
+        order_by: [asc: lot.expires_on, asc: lot.source_operation_id, asc: lot.id]
+    )
+  end
+
+  defp update_group!(group, attrs) do
+    attrs = Map.put(attrs, :revision, group.revision + 1)
+    {:ok, _group} = Repo.update(Group.changeset(group, attrs))
+  end
+
+  defp update_ledger!(refunded, retained, converted) do
+    case Repo.get(Ledger, 1) do
+      nil ->
+        {:ok, _ledger} =
+          Repo.insert(
+            Ledger.changeset(%Ledger{id: 1}, %{
+              cash_refunded_cents: refunded,
+              cash_retained_cents: retained,
+              cash_converted_to_credit_cents: converted
+            })
+          )
+
+      ledger ->
+        {:ok, _ledger} =
+          Repo.update(
+            Ledger.changeset(ledger, %{
+              cash_refunded_cents: ledger.cash_refunded_cents + refunded,
+              cash_retained_cents: ledger.cash_retained_cents + retained,
+              cash_converted_to_credit_cents: ledger.cash_converted_to_credit_cents + converted
+            })
+          )
+    end
+  end
+
+  defp calculate_deposit(rooms, nights, "advance_purchase") do
+    Enum.reduce(rooms, 0, fn room, total -> total + room.lodging_cents * nights end)
+  end
+
+  defp calculate_deposit(rooms, nights, "flexible") do
+    Enum.reduce(rooms, 0, fn room, total ->
+      lodging = room.lodging_cents * nights
+      total + round_percentage(lodging, 20, 100)
+    end)
+  end
+
+  defp round_percentage(amount, numerator, denominator) do
+    div(amount * numerator + div(denominator, 2), denominator)
+  end
+
+  defp validate_stay(arrival_on, departure_on) do
+    if Date.compare(arrival_on, departure_on) == :lt, do: :ok, else: {:error, "invalid_stay"}
+  end
+
+  defp validate_new_stay(occurred_on, new_arrival_on) do
+    if Date.compare(new_arrival_on, occurred_on) == :gt, do: :ok, else: {:error, "invalid_stay"}
+  end
+
+  defp validate_rate_plan(rate_plan) when rate_plan in ["flexible", "advance_purchase"],
+    do: {:ok, rate_plan}
+
+  defp validate_rate_plan(_rate_plan), do: {:error, "invalid_rate_plan"}
+
+  defp validate_amount(amount) when is_integer(amount) and amount > 0, do: :ok
+  defp validate_amount(_amount), do: {:error, "invalid_amount"}
+
+  defp validate_rooms(rooms) when is_list(rooms) and rooms != [] do
+    Enum.reduce_while(rooms, {:ok, MapSet.new(), []}, fn room, {:ok, ids, valid_rooms} ->
+      room_id = value(room, "room_id")
+      nightly_rate = value(room, "nightly_rate_cents")
+
+      cond do
+        not is_map(room) or not valid_identifier?(room_id) ->
+          {:halt, {:error, "invalid_rooms"}}
+
+        not is_integer(nightly_rate) or nightly_rate <= 0 ->
+          {:halt, {:error, "invalid_rooms"}}
+
+        MapSet.member?(ids, room_id) ->
+          {:halt, {:error, "invalid_rooms"}}
+
+        true ->
+          room_data = %{
+            room_id: room_id,
+            nightly_rate_cents: nightly_rate,
+            lodging_cents: nightly_rate
+          }
+
+          {:cont, {:ok, MapSet.put(ids, room_id), [room_data | valid_rooms]}}
+      end
+    end)
+    |> case do
+      {:ok, _ids, rooms} -> {:ok, Enum.reverse(rooms)}
+      {:error, code} -> {:error, code}
+    end
+  end
+
+  defp validate_rooms(_rooms), do: {:error, "invalid_rooms"}
+
+  defp parse_date(date) when is_binary(date) do
+    case Date.from_iso8601(date) do
+      {:ok, parsed} -> {:ok, parsed}
+      {:error, _reason} -> {:error, "invalid_stay"}
+    end
+  end
+
+  defp parse_date(_date), do: {:error, "invalid_stay"}
+
+  defp check_revision(operation, group) do
+    case fetch(operation, "expected_revision") do
+      :missing ->
+        :ok
+
+      {:ok, expected_revision} when is_integer(expected_revision) ->
+        if expected_revision == group.revision do
+          :ok
+        else
+          {:error, :stale_revision, expected_revision}
+        end
+
+      {:ok, _invalid_revision} ->
+        {:error, :invalid_operation}
+    end
+  end
+
+  defp refund_method(operation) do
+    case fetch(operation, "refund_method") do
+      :missing -> {:ok, "cash"}
+      {:ok, method} when method in ["cash", "hotel_credit"] -> {:ok, method}
+      {:ok, _method} -> {:error, "invalid_operation"}
+    end
+  end
+
+  defp refundable?(group, occurred_on) do
+    case refundable_until_for_group(group) do
+      nil -> false
+      refundable_until -> Date.compare(occurred_on, refundable_until) != :gt
+    end
+  end
+
+  defp policy_for_group(group),
+    do: group.policy_version || policy_version(group.rate_plan, group.booked_on)
+
+  defp policy_version("advance_purchase", _booked_on), do: "advance-nonrefundable"
+
+  defp policy_version("flexible", booked_on) do
+    if Date.compare(booked_on, @policy_cutover) == :lt, do: "flex-14", else: "flex-30"
+  end
+
+  defp refundable_until_for_group(group) do
+    group.refundable_until || refundable_until(policy_for_group(group), group.arrival_on)
+  end
+
+  defp refundable_until("advance-nonrefundable", _arrival_on), do: nil
+  defp refundable_until("flex-30", arrival_on), do: Date.add(arrival_on, -30)
+  defp refundable_until(_policy, arrival_on), do: Date.add(arrival_on, -14)
+
+  defp outstanding(group), do: max(deposit_due(group) - deposit_paid(group), 0)
+  defp deposit_due(group), do: group.deposit_due_cents
+  defp deposit_paid(group), do: group.deposit_paid_cents
+  defp cash_paid(group), do: group.cash_paid_cents || group.deposit_paid_cents
+  defp credit_paid(group), do: group.credit_paid_cents || 0
+
+  defp format_date(nil), do: nil
+  defp format_date(date), do: Date.to_iso8601(date)
+
+  defp applied(operation_id, fields) do
+    Map.merge(%{operation_id: operation_id, status: "applied"}, fields)
+  end
+
+  defp rejection(operation_id, code, fields \\ %{}) do
+    Map.merge(%{operation_id: operation_id, status: "rejected", code: code}, fields)
+  end
+
+  defp present?(operation, keys) do
+    Enum.all?(keys, fn key -> fetch(operation, key) != :missing end)
+  end
+
+  defp valid_identifier?(value), do: is_binary(value) and value != ""
+
+  defp stored_type(type) when is_binary(type), do: type
+  defp stored_type(_type), do: nil
+
+  defp canonical_payload(payload) do
+    payload
+    |> Jason.encode!()
+    |> Jason.decode!()
+  end
+
+  defp value(map, key) when is_map(map) do
+    case fetch(map, key) do
+      {:ok, value} -> value
+      :missing -> nil
+    end
+  end
+
+  defp value(_map, _key), do: nil
+
+  defp fetch(map, key) do
+    atom_key = String.to_existing_atom(key)
+
+    case Map.fetch(map, key) do
+      {:ok, value} ->
+        {:ok, value}
+
+      :error ->
+        case Map.fetch(map, atom_key) do
+          {:ok, value} -> {:ok, value}
+          :error -> :missing
+        end
+    end
+  rescue
+    ArgumentError -> :missing
+  end
+end

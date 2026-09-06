@@ -1,0 +1,781 @@
+defmodule GroupStay.Accounting do
+  @moduledoc """
+  Room-level deposit accounting.
+
+  Cash and hotel credit fund active rooms' deposits in the rooms' original
+  order, filling one room's deposit before moving to the next; funding
+  operations allocate in operation-processing order. Every funded piece is
+  kept as a `GroupStay.Finance.Disposition` row, whose auto-increment id
+  preserves the fill order, so settlements, provider corrections, and
+  chargebacks can address exactly the cash that belongs to one payment —
+  and the unattributed funding that predates durable operation records can
+  never be mistaken for recorded funding.
+  """
+
+  import Ecto.Query
+
+  alias GroupStay.Bookings.Group
+  alias GroupStay.Bookings.Room
+  alias GroupStay.Finance.CreditLot
+  alias GroupStay.Finance.Disposition
+  alias GroupStay.Finance.LotEntitlement
+  alias GroupStay.Repo
+
+  @fund_cash "cash"
+  @fund_credit "hotel_credit"
+
+  ## Room and group state
+
+  def active_rooms(group_id) do
+    from(r in Room,
+      where: r.group_id == ^group_id and r.status == "active",
+      order_by: [asc: r.position]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  The room's remaining deposit capacity: what its active funding has not
+  covered yet.
+  """
+  def room_capacity(room),
+    do: room.deposit_due_cents - room.cash_paid_cents - room.credit_paid_cents
+
+  def outstanding(group), do: group.deposit_due_cents - group.deposit_paid_cents
+
+  @doc """
+  Rebuilds the group's aggregate totals from its active rooms: lodging,
+  deposit due, paid, and outstanding all describe the active rooms only.
+  A group whose last active room settles becomes `cancelled`.
+  """
+  def recompute_group(group) do
+    rooms = active_rooms(group.group_id)
+    nights = Date.diff(group.departure_on, group.arrival_on)
+
+    cash = Enum.sum(Enum.map(rooms, & &1.cash_paid_cents))
+    credit = Enum.sum(Enum.map(rooms, & &1.credit_paid_cents))
+
+    changes = %{
+      lodging_total_cents: Enum.sum(Enum.map(rooms, &(&1.nightly_rate_cents * nights))),
+      deposit_due_cents: Enum.sum(Enum.map(rooms, & &1.deposit_due_cents)),
+      cash_paid_cents: cash,
+      credit_paid_cents: credit,
+      deposit_paid_cents: cash + credit
+    }
+
+    changes =
+      if rooms == [], do: Map.put(changes, :status, "cancelled"), else: changes
+
+    Repo.update!(Ecto.Changeset.change(group, changes))
+  end
+
+  ## Funding
+
+  @doc """
+  Allocates `amount` of one fund across the group's active rooms in their
+  original order, filling one room's deposit before moving to the next.
+
+  Returns the updated group and the list of `{room, take}` chunks, in fill
+  order. Aggregate cash, credit, and liability balances change only through
+  the caller's regular accounting; allocations merely classify them.
+  """
+  def allocate(group, fund, owner, amount, occurred_on) do
+    rooms = active_rooms(group.group_id)
+    {chunks, _rooms} = fill_rooms(rooms, fund, owner, nil, amount, occurred_on)
+    group = recompute_group(group)
+    {group, chunks}
+  end
+
+  # Fills the rooms in their original order, threading the updated room
+  # structs back to the caller: a fill that only partially covers a room
+  # must leave the caller's cursor state current, or a later fill into the
+  # same room would compute its capacity and totals from stale values.
+  defp fill_rooms(rooms, fund, owner, lot_id, amount, occurred_on) do
+    {reversed_chunks, reversed_rooms, _left} =
+      Enum.reduce(rooms, {[], [], amount}, fn room, {chunks, updated, left} ->
+        take = min(room_capacity(room), max(left, 0))
+
+        if take > 0 do
+          insert_disposition(%{
+            group_id: room.group_id,
+            room_id: room.room_id,
+            payment_operation_id: owner,
+            fund: fund,
+            kind: "held",
+            lot_id: lot_id,
+            amount_cents: take,
+            occurred_on: occurred_on
+          })
+
+          room = credit_room(room, fund, take)
+          {[{room, take} | chunks], [room | updated], left - take}
+        else
+          {chunks, [room | updated], left}
+        end
+      end)
+
+    {Enum.reverse(reversed_chunks), Enum.reverse(reversed_rooms)}
+  end
+
+  defp insert_disposition(attrs) do
+    %Disposition{}
+    |> Ecto.Changeset.change(attrs)
+    |> Repo.insert!()
+  end
+
+  defp credit_room(room, @fund_cash, take) do
+    updated = %{room | cash_paid_cents: room.cash_paid_cents + take}
+    Repo.update!(Ecto.Changeset.change(room, cash_paid_cents: updated.cash_paid_cents))
+    updated
+  end
+
+  defp credit_room(room, _fund, take) do
+    updated = %{room | credit_paid_cents: room.credit_paid_cents + take}
+    Repo.update!(Ecto.Changeset.change(room, credit_paid_cents: updated.credit_paid_cents))
+    updated
+  end
+
+  ## Hotel-credit application
+
+  @doc """
+  Redeems up to `amount_cents` of the group's guest credit into the group's
+  active rooms. Lots are consumed by earliest expiry, then by source
+  operation; each taken portion is held against its lot so a refundable
+  settlement can restore it. Returns `{:ok, group, lot_draws}` with the
+  recomputed group and the `{lot_id, amount_cents}` drawn from each lot, or
+  `{:error, :insufficient_credit}`.
+  """
+  def apply_group_credit(group, occurred_on, operation_id, amount_cents) do
+    guest_id = group.guest_id
+
+    if GroupStay.available_credit(guest_id, occurred_on) < amount_cents do
+      {:error, :insufficient_credit}
+    else
+      rooms = active_rooms(group.group_id)
+
+      {lot_draws, _rooms, _left} =
+        Enum.reduce(GroupStay.available_lots(guest_id, occurred_on), {[], rooms, amount_cents}, fn
+          lot, {draws, rooms, left} ->
+            take = min(lot.remaining_cents, max(left, 0))
+
+            if take > 0 do
+              Repo.update!(
+                Ecto.Changeset.change(lot, remaining_cents: lot.remaining_cents - take)
+              )
+
+              {_room_chunks, rooms} =
+                fill_rooms(rooms, @fund_credit, operation_id, lot.id, take, occurred_on)
+
+              {draws ++ [{lot.id, take}], rooms, left - take}
+            else
+              {draws, rooms, left}
+            end
+        end)
+
+      {:ok, recompute_group(group), lot_draws}
+    end
+  end
+
+  ## Settlement of selected rooms
+
+  @doc """
+  Settles the held cash and credit of the selected rooms using the
+  cancellation's rules: refundable cash refunds or converts to hotel credit
+  (one lot for the combined cash, with telescoping entitlements), otherwise
+  cash is retained. Applied credit returns to its lots on a refundable
+  settlement — extinguishing any unrecovered clawback first — and is
+  consumed by a non-refundable one. Unpaid deposit for the rooms ceases to
+  be due.
+
+  Returns `{group, settled_cash_cents, credit_issued_cents, issued_lot_id,
+  credit_events}`. The credit events describe what the settlement did to
+  applied credit, per lot for a refundable settlement (`:restored` with its
+  absorbed, returned, and immediately-expired portions) or one `:consumed`
+  event for a non-refundable one.
+  """
+  def settle_rooms(group, rooms, mode, occurred_on, operation_id, refundable?) do
+    room_ids = Enum.map(rooms, & &1.room_id)
+    held = held_dispositions(group.group_id, room_ids)
+    cash_rows = Enum.filter(held, &(&1.fund == @fund_cash))
+    credit_rows = Enum.filter(held, &(&1.fund == @fund_credit))
+
+    cash_total = Enum.sum(Enum.map(cash_rows, & &1.amount_cents))
+    {issued, lot_id} = settle_cash(group, cash_rows, cash_total, mode, occurred_on, operation_id)
+    credit_events = settle_credit(group, credit_rows, refundable?, occurred_on)
+
+    for room <- rooms do
+      Repo.update!(
+        Ecto.Changeset.change(room, %{
+          status: "cancelled",
+          cash_paid_cents: 0,
+          credit_paid_cents: 0
+        })
+      )
+    end
+
+    group = recompute_group(group)
+    {group, cash_total, issued, lot_id, credit_events}
+  end
+
+  defp settle_cash(_group, _rows, 0, _mode, _occurred_on, _operation_id), do: {0, nil}
+
+  defp settle_cash(group, rows, cash_total, :convert, occurred_on, operation_id) do
+    lot = GroupStay.issue_hotel_credit_lot(group.guest_id, operation_id, cash_total, occurred_on)
+    create_entitlements(lot.id, rows)
+    reclassify(rows, "converted", lot.id, occurred_on)
+
+    GroupStay.record_ledger_entry(%{
+      kind: "converted_to_credit",
+      amount: cash_total,
+      group_id: group.group_id,
+      occurred_on: occurred_on
+    })
+
+    {lot_amount(cash_total), lot.id}
+  end
+
+  defp settle_cash(group, rows, cash_total, mode, occurred_on, _operation_id) do
+    kind = if mode == :refund, do: "refunded", else: "retained"
+    reclassify(rows, kind, nil, occurred_on)
+
+    GroupStay.record_ledger_entry(%{
+      kind: kind,
+      amount: cash_total,
+      group_id: group.group_id,
+      occurred_on: occurred_on
+    })
+
+    {0, nil}
+  end
+
+  defp lot_amount(cash_total), do: GroupStay.hotel_credit_lot_amount(cash_total)
+
+  # Entitlements telescope exactly to the issued lot: per payment, the
+  # issued value of the cash converted through that payment minus the issued
+  # value through the preceding payment, in fill order. The unattributed
+  # senior block advances the running total without claiming.
+  defp create_entitlements(lot_id, rows) do
+    {claims, _running} =
+      Enum.map_reduce(rows, 0, fn row, running ->
+        through = running + row.amount_cents
+
+        claim =
+          if row.payment_operation_id,
+            do:
+              GroupStay.hotel_credit_lot_amount(through) -
+                GroupStay.hotel_credit_lot_amount(running),
+            else: 0
+
+        {{row.payment_operation_id, claim}, through}
+      end)
+
+    claims
+    |> Enum.group_by(fn {owner, _claim} -> owner end, fn {_owner, claim} -> claim end)
+    |> Enum.each(fn
+      {nil, _claims} ->
+        # The unattributed senior block advances the running total without
+        # claiming a bonus of its own.
+        :skip
+
+      {owner, claims} ->
+        entitled = Enum.sum(claims)
+
+        if entitled > 0 do
+          %LotEntitlement{}
+          |> Ecto.Changeset.change(%{
+            lot_id: lot_id,
+            payment_operation_id: owner,
+            entitled_cents: entitled,
+            removed_cents: 0
+          })
+          |> Repo.insert!()
+        end
+    end)
+  end
+
+  defp reclassify(rows, kind, lot_id, occurred_on) do
+    for row <- rows do
+      changes = %{kind: kind, occurred_on: occurred_on}
+      changes = if lot_id, do: Map.put(changes, :lot_id, lot_id), else: changes
+      Repo.update!(Ecto.Changeset.change(row, changes))
+    end
+
+    :ok
+  end
+
+  defp settle_credit(_group, [], _refundable?, _restore_on), do: []
+
+  defp settle_credit(_group, credit_rows, refundable?, restore_on) do
+    events =
+      if refundable? do
+        credit_rows
+        |> Enum.group_by(& &1.lot_id, & &1.amount_cents)
+        |> Enum.map(fn {lot_id, amounts} -> {lot_id, Enum.sum(amounts)} end)
+        |> Enum.sort_by(fn {lot_id, _amount} -> lot_id end)
+        |> Enum.map(fn {lot_id, amount} ->
+          {absorbed, returned, expired_now} = restore_to_lot(lot_id, amount, restore_on)
+
+          %{
+            kind: :restored,
+            lot_id: lot_id,
+            absorbed_cents: absorbed,
+            returned_cents: returned,
+            expired_cents: expired_now
+          }
+        end)
+      else
+        # Applied credit is consumed by a non-refundable settlement: it leaves
+        # the liability permanently and nothing returns to any lot.
+        [
+          %{
+            kind: :consumed,
+            amount_cents: Enum.sum(Enum.map(credit_rows, & &1.amount_cents))
+          }
+        ]
+      end
+
+    Repo.delete_all(from(d in Disposition, where: d.id in ^Enum.map(credit_rows, & &1.id)))
+    events
+  end
+
+  # Restores an applied amount to its lot. An unrecovered clawback absorbs
+  # the return first — before the lot's expiry is even checked — and only an
+  # excess becomes available, and only while the lot is still unexpired; an
+  # expired lot's excess expires immediately instead.
+  defp restore_to_lot(lot_id, amount, restore_on) do
+    lot = Repo.get!(CreditLot, lot_id)
+    absorbed = min(lot.unrecovered_clawback_cents, amount)
+
+    changes = %{unrecovered_clawback_cents: lot.unrecovered_clawback_cents - absorbed}
+
+    returns = amount - absorbed
+
+    unexpired? = Date.compare(lot.expires_on, restore_on) != :lt
+
+    changes =
+      if unexpired? and returns > 0,
+        do: Map.put(changes, :remaining_cents, lot.remaining_cents + returns),
+        else: changes
+
+    Repo.update!(Ecto.Changeset.change(lot, changes))
+
+    if unexpired? do
+      {absorbed, returns, 0}
+    else
+      {absorbed, 0, returns}
+    end
+  end
+
+  ## Provider corrections
+
+  @doc "Cash from the recorded payment still held on active rooms."
+  def held_total(payment_operation_id) do
+    from(d in Disposition,
+      where:
+        d.payment_operation_id == ^payment_operation_id and d.fund == @fund_cash and
+          d.kind == "held",
+      select: coalesce(sum(d.amount_cents), 0)
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Held funding (cash and hotel credit) currently allocated to the group's
+  active rooms — what a deposit transfer can draw from.
+  """
+  def group_held_total(group_id) do
+    from(d in Disposition,
+      where: d.group_id == ^group_id and d.kind == "held",
+      select: coalesce(sum(d.amount_cents), 0)
+    )
+    |> Repo.one()
+  end
+
+  ## Deposit transfers
+
+  @doc """
+  Moves `amount` of the source group's held funding to the destination
+  group without settling, revaluing, or touching any ledger total.
+
+  Units are drawn from the source's held allocations in reverse allocation
+  order (most recently created first), regardless of funding kind, and
+  poured into the destination's active rooms in their original order,
+  preserving the order in which units were drawn. Every moved piece keeps
+  its provenance: cash keeps its payment operation identity and hotel
+  credit keeps its original lot.
+
+  Returns the recomputed source and destination groups.
+  """
+  def transfer_held(source_group_id, destination_group_id, amount, occurred_on) do
+    rows =
+      from(d in Disposition,
+        where: d.group_id == ^source_group_id and d.kind == "held",
+        order_by: [desc: d.id]
+      )
+      |> Repo.all()
+
+    {draws, _left} =
+      Enum.map_reduce(rows, amount, fn row, left ->
+        take = min(row.amount_cents, max(left, 0))
+
+        if take > 0 do
+          # A fully drawn allocation moves as a whole; a partially drawn one
+          # leaves its remainder held in place on the source room.
+          if take == row.amount_cents do
+            Repo.delete!(row)
+          else
+            Repo.update!(Ecto.Changeset.change(row, amount_cents: row.amount_cents - take))
+          end
+
+          {{row, take}, left - take}
+        else
+          {nil, left}
+        end
+      end)
+
+    capacities =
+      destination_group_id
+      |> active_rooms()
+      |> Enum.map(&{&1, room_capacity(&1)})
+
+    draws
+    |> Enum.reject(&is_nil/1)
+    |> Enum.reduce(capacities, fn {row, take}, capacities ->
+      debit_room(row.group_id, row.room_id, row.fund, take)
+      pour_into_destination(row, take, capacities, occurred_on)
+    end)
+
+    source = recompute_group(Repo.get!(Group, source_group_id))
+    destination = recompute_group(Repo.get!(Group, destination_group_id))
+    {source, destination}
+  end
+
+  # Pours one drawn piece into the destination rooms in their original
+  # order, keeping the cursor on a partially filled room so the units are
+  # held in draw order.
+  defp pour_into_destination(_row, 0, capacities, _occurred_on), do: capacities
+
+  defp pour_into_destination(row, left, [cap | rest], occurred_on) do
+    {room, capacity} = cap
+
+    cond do
+      capacity <= 0 ->
+        pour_into_destination(row, left, rest, occurred_on)
+
+      true ->
+        take = min(capacity, left)
+
+        insert_disposition(%{
+          group_id: room.group_id,
+          room_id: room.room_id,
+          payment_operation_id: row.payment_operation_id,
+          fund: row.fund,
+          kind: "held",
+          lot_id: row.lot_id,
+          amount_cents: take,
+          occurred_on: occurred_on,
+          transferred: true
+        })
+
+        # The pour keeps the room struct in its cursor state, so each credit
+        # must return the updated struct or the next pour on the same room
+        # would write over it with a stale total.
+        room = credit_room(room, row.fund, take)
+
+        remaining = left - take
+
+        capacities =
+          if take < capacity,
+            do: [{room, capacity - take} | rest],
+            else: rest
+
+        pour_into_destination(row, remaining, capacities, occurred_on)
+    end
+  end
+
+  defp pour_into_destination(_row, _left, [], _occurred_on), do: []
+
+  def reduced_total(payment_operation_id) do
+    classification_total(payment_operation_id, "reduced")
+  end
+
+  def charged_back_total(payment_operation_id) do
+    classification_total(payment_operation_id, "charged_back")
+  end
+
+  defp classification_total(payment_operation_id, kind) do
+    from(d in Disposition,
+      where:
+        d.payment_operation_id == ^payment_operation_id and d.fund == @fund_cash and
+          d.kind == ^kind,
+      select: coalesce(sum(d.amount_cents), 0)
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Removes held cash belonging to the target payment in reverse fill order
+  across all groups it currently funds, reopening the active rooms'
+  outstanding deposit. Returns the removed pieces as
+  `%{group_id: group_id, amount_cents: amount}` — the groups whose funding
+  changed, in fill order.
+  """
+  def reduce_held(payment_operation_id, amount, occurred_on, addressed_group_id) do
+    rows =
+      from(d in Disposition,
+        where:
+          d.payment_operation_id == ^payment_operation_id and d.fund == @fund_cash and
+            d.kind == "held",
+        order_by: [desc: d.id]
+      )
+      |> Repo.all()
+
+    {removed, _left} =
+      Enum.map_reduce(rows, amount, fn row, left ->
+        take = min(row.amount_cents, max(left, 0))
+
+        if take > 0 do
+          Repo.update!(
+            Ecto.Changeset.change(row, %{
+              kind: "reduced",
+              amount_cents: take,
+              occurred_on: occurred_on
+            })
+          )
+
+          # The removed amount becomes recorded as reduced; a partially
+          # reduced row keeps its remainder held in place, re-entering the
+          # fill order behind everything allocated before it.
+          if take < row.amount_cents do
+            insert_disposition(%{
+              group_id: row.group_id,
+              room_id: row.room_id,
+              payment_operation_id: row.payment_operation_id,
+              fund: row.fund,
+              kind: "held",
+              lot_id: row.lot_id,
+              amount_cents: row.amount_cents - take,
+              occurred_on: occurred_on
+            })
+          end
+
+          debit_room(row.group_id, row.room_id, row.fund, take)
+          {{row, take}, left - take}
+        else
+          {nil, left}
+        end
+      end)
+
+    removed = Enum.reject(removed, &is_nil/1)
+
+    total = Enum.sum(Enum.map(removed, fn {_row, take} -> take end))
+
+    GroupStay.record_ledger_entry(%{
+      kind: "reduced",
+      amount: total,
+      group_id: addressed_group_id,
+      occurred_on: occurred_on
+    })
+
+    Enum.map(removed, fn {row, take} -> %{group_id: row.group_id, amount_cents: take} end)
+  end
+
+  # Debits leave the room's deposit: reductions, chargebacks, and transfers
+  # only ever move held funding off a room.
+  defp debit_room(_group_id, _room_id, _fund, 0), do: :ok
+  defp debit_room(_group_id, nil, _fund, _take), do: :ok
+
+  defp debit_room(group_id, room_id, fund, take) do
+    room = Repo.get_by!(Room, group_id: group_id, room_id: room_id)
+
+    changes =
+      if fund == @fund_cash,
+        do: %{cash_paid_cents: room.cash_paid_cents - take},
+        else: %{credit_paid_cents: room.credit_paid_cents - take}
+
+    Repo.update!(Ecto.Changeset.change(room, changes))
+  end
+
+  @doc """
+  Reverses all cash from one recorded payment except any portion already
+  recorded as reduced: held allocations are removed in reverse fill order
+  across all groups they currently fund (reopening the active rooms'
+  outstanding deposit), refunded and retained portions move to charged-back
+  cash, and converted principal moves to charged-back cash while its credit
+  entitlement is revoked. The historical refund or retention itself is not
+  reversed or reissued.
+
+  Returns a map with:
+
+  - `affected_group_ids` — the groups whose held funding was removed;
+  - `charged_back_cents` — the total reclassified to charged-back cash;
+  - `pieces` — the reclassified amounts per `%{group_id, from_kind,
+    amount_cents}`, so reporting can follow each piece to the property
+    where it was held or settled and reverse its prior classification;
+  - `revocations` — the credit entitlement actually removed per
+    `%{lot_id, removed_cents}`.
+  """
+  def charge_back(payment_operation_id, occurred_on, addressed_group_id) do
+    rows =
+      from(d in Disposition,
+        where:
+          d.payment_operation_id == ^payment_operation_id and d.fund == @fund_cash and
+            d.kind in ["held", "refunded", "retained", "converted"]
+      )
+      |> Repo.all()
+
+    total = Enum.sum(Enum.map(rows, & &1.amount_cents))
+
+    affected =
+      for row <- rows, row.kind == "held" do
+        debit_room(row.group_id, row.room_id, row.fund, row.amount_cents)
+        row.group_id
+      end
+
+    revocations =
+      rows
+      |> Enum.filter(&(&1.kind == "converted" and is_integer(&1.lot_id)))
+      |> Enum.map(& &1.lot_id)
+      |> Enum.uniq()
+      |> Enum.sort()
+      |> Enum.flat_map(fn lot_id ->
+        case claw_back(lot_id, payment_operation_id) do
+          {:ok, removed} when removed > 0 -> [%{lot_id: lot_id, removed_cents: removed}]
+          _ -> []
+        end
+      end)
+
+    for row <- rows do
+      Repo.update!(Ecto.Changeset.change(row, %{kind: "charged_back", occurred_on: occurred_on}))
+    end
+
+    GroupStay.record_ledger_entry(%{
+      kind: "charged_back",
+      amount: total,
+      group_id: addressed_group_id,
+      occurred_on: occurred_on
+    })
+
+    pieces =
+      rows
+      |> Enum.group_by(&{&1.group_id, &1.kind}, & &1.amount_cents)
+      |> Enum.map(fn {{group_id, from_kind}, amounts} ->
+        %{group_id: group_id, from_kind: from_kind, amount_cents: Enum.sum(amounts)}
+      end)
+      |> Enum.sort_by(&{&1.group_id, &1.from_kind})
+
+    %{
+      affected_group_ids: Enum.uniq(affected),
+      charged_back_cents: total,
+      pieces: pieces,
+      revocations: revocations
+    }
+  end
+
+  # Takes the payment's entitlement out of the lot's remaining balance
+  # first; whatever cannot be removed becomes the lot's unrecovered clawback.
+  # Returns the amount actually removed from the lot's balance.
+  defp claw_back(lot_id, payment_operation_id) do
+    entitlement =
+      Repo.one(
+        from(e in LotEntitlement,
+          where: e.lot_id == ^lot_id and e.payment_operation_id == ^payment_operation_id
+        )
+      )
+
+    case entitlement do
+      nil ->
+        {:ok, 0}
+
+      %{removed_cents: removed, entitled_cents: entitled} = entitlement ->
+        claim = entitled - removed
+
+        if claim > 0 do
+          lot = Repo.get!(CreditLot, lot_id)
+          removed_now = min(claim, lot.remaining_cents)
+
+          Repo.update!(
+            Ecto.Changeset.change(lot, %{
+              remaining_cents: lot.remaining_cents - removed_now,
+              unrecovered_clawback_cents: lot.unrecovered_clawback_cents + claim - removed_now
+            })
+          )
+
+          Repo.update!(Ecto.Changeset.change(entitlement, removed_cents: entitled))
+
+          {:ok, removed_now}
+        else
+          {:ok, 0}
+        end
+    end
+  end
+
+  ## Reads
+
+  defp held_dispositions(group_id, room_ids) do
+    from(d in Disposition,
+      where: d.group_id == ^group_id and d.kind == "held" and d.room_id in ^room_ids,
+      order_by: [asc: d.id]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  The current disposition of one recorded payment's cash. The six
+  classification amounts always sum exactly to the recorded amount.
+
+  Once any of the payment's funding has participated in a deposit transfer,
+  the statement also carries `held_by_group` — its held cash grouped by
+  group id, ordered by `group_id`, with groups holding none omitted. The
+  amounts sum to `held_cents` and the list is empty once nothing remains;
+  payments never transferred keep the earlier statement shape.
+  """
+  def payment_statement(payment_operation_id) do
+    rows =
+      from(d in Disposition,
+        where: d.payment_operation_id == ^payment_operation_id and d.fund == @fund_cash,
+        select: {d.kind, d.amount_cents}
+      )
+      |> Repo.all()
+      |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+      |> Map.new(fn {kind, amounts} -> {kind, Enum.sum(amounts)} end)
+
+    statement = %{
+      held_cents: Map.get(rows, "held", 0),
+      refunded_cents: Map.get(rows, "refunded", 0),
+      retained_cents: Map.get(rows, "retained", 0),
+      converted_to_credit_cents: Map.get(rows, "converted", 0),
+      reduced_cents: Map.get(rows, "reduced", 0),
+      charged_back_cents: Map.get(rows, "charged_back", 0)
+    }
+
+    if participated_in_transfer?(payment_operation_id) do
+      Map.put(statement, :held_by_group, held_by_group(payment_operation_id))
+    else
+      statement
+    end
+  end
+
+  defp participated_in_transfer?(payment_operation_id) do
+    Repo.exists?(
+      from(d in Disposition,
+        where: d.payment_operation_id == ^payment_operation_id and d.transferred == true
+      )
+    )
+  end
+
+  defp held_by_group(payment_operation_id) do
+    from(d in Disposition,
+      where:
+        d.payment_operation_id == ^payment_operation_id and d.fund == @fund_cash and
+          d.kind == "held",
+      group_by: d.group_id,
+      order_by: [asc: d.group_id],
+      select: {d.group_id, coalesce(sum(d.amount_cents), 0)}
+    )
+    |> Repo.all()
+    |> Enum.map(fn {group_id, amount_cents} ->
+      %{"group_id" => group_id, "amount_cents" => amount_cents}
+    end)
+  end
+end

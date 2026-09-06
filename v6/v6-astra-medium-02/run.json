@@ -1,0 +1,1960 @@
+{
+  "id": "v6-astra-medium-02",
+  "group": "astra-medium",
+  "sample": 2,
+  "display": "GPT-6 Astra medium / Codex CLI",
+  "view": "models",
+  "model": "gpt-6-astra",
+  "effort": "medium",
+  "harness": "codex",
+  "protocol": "handoff",
+  "candidate_tests": "endogenous",
+  "benchmark_commit": "5fda9a09255529b027cadf836c0c16c867a039e5",
+  "scores": {
+    "core": 38,
+    "maintenance": 7,
+    "scenarios": 90
+  },
+  "snapshots": [
+    {
+      "milestone": 1,
+      "directory": "milestone-1",
+      "candidate_commit": "6df8b3f16323a5d4a0010c085342f50bc6661d14",
+      "evaluation_report_sha256": "41eb39ac5111fbeeb31101f8aa9555250e064c869fbb1a8f15a76ae694169797",
+      "recorded_checkpoint_sha256": "66c750db374cc7f05db15dc4cfdf882c67e660ecf84366a37ec221ae6b91168a",
+      "source_tree_sha256": "9f8192c5829a8d7613bc9a7a002df235a374589c67f2148ffb74170cb3ca4569",
+      "bytes": 72702,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "bbc9d790a3bcf765b85e652df470dced7eb93d88c4d28d0aaedd3785ac72fb46"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 561,
+          "sha256": "7b7ab70aa3efe9ba4eda4fc71860e3028b5cea8893c58f3a6a43036b690da47c"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 3359,
+          "sha256": "c259d264ff0fd6fc8552ed777a49bb3088c8c455d7b38cad09f210e4a5964c13"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 650,
+          "sha256": "2ba0643fee86fe458577e88c4e441cbb662b90eabc5158bc887c362e404517c2"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 8581,
+          "sha256": "f8a2ed4eea0b786b6e358c6ed958c9da52197f6a1de2f042f51234a98214886d"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 677,
+          "sha256": "b0a3751f88e8fe67cf898f363846c6b18deb8c5a4a0f594b9cd494a21e3e17be"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 724,
+          "sha256": "45e054c8699b2f9864958b8d4574952b806eeae8cdd909de547fb1e028c9c5b9"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 340,
+          "sha256": "7be85b6864733ed89ede4607d090909d11633fa389a6d4341013cc7f8042b6a4"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 4492,
+          "sha256": "fea753f92afd9918e2bd742b62092d5f59bd8688407b57b44b01d9923d4414bf"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 14781,
+          "sha256": "98f285367ffe6cacc6de189a4362421074dba9f68f03904fc33b24c2d2d85474"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    },
+    {
+      "milestone": 2,
+      "directory": "milestone-2",
+      "candidate_commit": "aa3b5305eee828c78dac49b65e3d69ebcceda2fb",
+      "evaluation_report_sha256": "6bed20a5aecc79d1e899c1307a92d174a38f5cb40acc9981ddcc63cea314f997",
+      "recorded_checkpoint_sha256": "1fa1e2a83c3e89a1988d48ee275c00ac1315fc89cac4aed9137b6d92dda839cc",
+      "source_tree_sha256": "1005f20acfe08a73d473b9f4607b96972bf3b650bc040c47da3d98a4f1ce93a0",
+      "bytes": 105257,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "4ffa05f151a32ea6de883119acbba54ba4b798f71223db3da0b8a52aabbc8a38"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 567,
+          "sha256": "8927322e607b9ef842f018837f2ff04ee8b0633502d6ab27a67bfd9e514cf70c"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 6375,
+          "sha256": "aba26a138c2aa4a78b427e8977b84a22853c96d87d72d9282f5a4c13a22de788"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 650,
+          "sha256": "2ba0643fee86fe458577e88c4e441cbb662b90eabc5158bc887c362e404517c2"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "docs/requests/02-cancellation-economics.md",
+          "bytes": 5083,
+          "sha256": "e64bc2f3d9c1adfd20c531f0266f6a5cce10efe009f195e4126cb4e3662963ac"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 13367,
+          "sha256": "7b1976d83d2f32deffe192ddc28f6a71acdf50f1c1a9388100d4bec66d2783e3"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_allocation.ex",
+          "bytes": 208,
+          "sha256": "ff33de37245e2d37b62e4178e3c8aa93bd63ef0b32daafcd98c8abbc6318b308"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_lot.ex",
+          "bytes": 236,
+          "sha256": "1aeb721a3d4ce3d92bea1a5b021200e1917f6db4fdd59f37c7871273a9d17171"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 876,
+          "sha256": "5f029ff86d6e749f81cdc371d3a821c445526b41f6feefa874979f6c9efcc6bb"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 1236,
+          "sha256": "c17784f512e1551a629c546a004660fb3a30f7b55693e87dcadb147efaf5a00a"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 403,
+          "sha256": "54f98d01f21303eab54aa0566ee90fae7fd14cbec1e751d4f2a261fa041e9a80"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000001_add_cancellation_economics.exs",
+          "bytes": 1502,
+          "sha256": "5a3caa97bd83bdaf939a8a8ac3fa2b8074786f46467d447742f18b556bc10f5c"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 9371,
+          "sha256": "2dd41a5d639b9acb37a5623651d6b150b95d6567924f348eb82e5c9e59d372f6"
+        },
+        {
+          "path": "test/group_stay_web/controllers/cancellation_economics_test.exs",
+          "bytes": 11474,
+          "sha256": "1f407e89650c3a3907d571381882839762caf2f74bbcd6e1172a2bcac7b6cac9"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 15372,
+          "sha256": "c8d7ad2f0c4858476c564ce95157e2a506682cb3085f8fda937bdda9132be77c"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    },
+    {
+      "milestone": 3,
+      "directory": "milestone-3",
+      "candidate_commit": "c0ea5fc429307ab385df59dd175880cd0920d7fa",
+      "evaluation_report_sha256": "8d46cf61964923d085b4d7cde788f9b216d7df16da2fe2525f9ec8d0d7cd8432",
+      "recorded_checkpoint_sha256": "68de524343ca1a7bad9ba62e838ea51755150aa45e187ab06b5f159c778f53e9",
+      "source_tree_sha256": "b27ba3ac05300530a74051f490fa31c0337415c86e67cc34e13c9d1199d0167c",
+      "bytes": 123310,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "b35a186a8e0ab15bae4c0e893137bf9eabdbd2120ea0d4eeaaa85417e9dcac35"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 563,
+          "sha256": "719b370d9a510e6f6c1263239fcc8f358c0231bf46138c0d4fd61c8e0844a8f1"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 4575,
+          "sha256": "6229038b7fa1dd4e737009f1b3193048fa125493fe77c1122b04c69be2894ad0"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 1190,
+          "sha256": "762c6560ebba0e9a007c0750d6845bd0d8ec0188c50edeed482e6d9e1e70a076"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "docs/requests/02-cancellation-economics.md",
+          "bytes": 5083,
+          "sha256": "e64bc2f3d9c1adfd20c531f0266f6a5cce10efe009f195e4126cb4e3662963ac"
+        },
+        {
+          "path": "docs/requests/03-durable-operations.md",
+          "bytes": 2765,
+          "sha256": "e12a3d8d58b0fee84942dfbd32737efb02ac2dc517e2a814aba17a40bc659ef8"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 15094,
+          "sha256": "c2dc10ab1cf624c1bbf4ef79ab8688d68503809a6b6b7fcbc3e037d0d8d63b29"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_allocation.ex",
+          "bytes": 208,
+          "sha256": "ff33de37245e2d37b62e4178e3c8aa93bd63ef0b32daafcd98c8abbc6318b308"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_lot.ex",
+          "bytes": 236,
+          "sha256": "1aeb721a3d4ce3d92bea1a5b021200e1917f6db4fdd59f37c7871273a9d17171"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 876,
+          "sha256": "5f029ff86d6e749f81cdc371d3a821c445526b41f6feefa874979f6c9efcc6bb"
+        },
+        {
+          "path": "lib/group_stay/reservations/operation.ex",
+          "bytes": 289,
+          "sha256": "43c45431e45080999d8651ae666c02293cbb76679a19857e52104f3650924595"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 1482,
+          "sha256": "fa12bf6e5a6ace69eac63b2351595291b441ac0ceaf889b84b24615d00de8618"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 470,
+          "sha256": "735fba3aecf37bd49ed93128b30c6d6f7ddac400802373a01fca0b868e5b2564"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000001_add_cancellation_economics.exs",
+          "bytes": 1502,
+          "sha256": "5a3caa97bd83bdaf939a8a8ac3fa2b8074786f46467d447742f18b556bc10f5c"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000002_create_operations.exs",
+          "bytes": 430,
+          "sha256": "107e79165c01203ea96e95f43a7535db62529ec43d9a3e0716039e3e7885dee6"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 15821,
+          "sha256": "5b4394a17d411426ca2697939ae9428e31977dd7b59e688b7f8d467bb9b30a2c"
+        },
+        {
+          "path": "test/group_stay_web/controllers/cancellation_economics_test.exs",
+          "bytes": 11614,
+          "sha256": "05947443c9222ccf5513b3c9681aebc23e8b54d0b3c69f70f12fc48ff44a8413"
+        },
+        {
+          "path": "test/group_stay_web/controllers/durable_operations_test.exs",
+          "bytes": 7109,
+          "sha256": "dae7a1655e06f903d7183e79a5bead2a8b3a180fd0700a24640c783055e79dc2"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 15466,
+          "sha256": "dcabfb5ccb7f1fb39dbc2a8dd6a6383cd45f12207aa439cc89ccabc442a91c78"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    },
+    {
+      "milestone": 4,
+      "directory": "milestone-4",
+      "candidate_commit": "bbfdd6fa6e5e04c732e2b726bc8e14c9ac9012eb",
+      "evaluation_report_sha256": "1b1df503c1d37b159d9d939fd3c504cf3baa64aac874f8e3db91b70979b872ad",
+      "recorded_checkpoint_sha256": "554decec44857ba8b376778abfc7806a5c03b58082d99174e04e7fe822e25e66",
+      "source_tree_sha256": "ebc40815a587b6159b25f2352c3c225cf93f47880e9a31195f803fce3bf85e7f",
+      "bytes": 183283,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "104528085973eafccfefaa45a1be6151fc1fefa2e733393d367773fe93c87645"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 583,
+          "sha256": "8d2ff962d6beb5e1ea331b37997d632219a8cae37fa1c9c0f4b4506a1a1c2654"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 7975,
+          "sha256": "4022c727852a622c852fdb64d5157f3c022deae315ea8ce4d6b374061dd7db70"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 1662,
+          "sha256": "5a597b132d4e68f64b722ddae65e96ddb3654dbe6177e903825610b7e624415f"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "docs/requests/02-cancellation-economics.md",
+          "bytes": 5083,
+          "sha256": "e64bc2f3d9c1adfd20c531f0266f6a5cce10efe009f195e4126cb4e3662963ac"
+        },
+        {
+          "path": "docs/requests/03-durable-operations.md",
+          "bytes": 2765,
+          "sha256": "e12a3d8d58b0fee84942dfbd32737efb02ac2dc517e2a814aba17a40bc659ef8"
+        },
+        {
+          "path": "docs/requests/04-room-accounting-and-payment-reductions.md",
+          "bytes": 9199,
+          "sha256": "a0d1071890ebc91e88bf42066adb0d3fd7fcd47912788f6eb8b431ea6038cd88"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 20736,
+          "sha256": "ae8710d9b95ae146ed5983f2a13b28213c452914e32032b4af3e5f4737a7dbf1"
+        },
+        {
+          "path": "lib/group_stay/reservations/accounting.ex",
+          "bytes": 6187,
+          "sha256": "3136136234b10dfad29e8ed7216508bc8e15ee7e0bd7ea38b2d0f31140e02d0b"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_allocation.ex",
+          "bytes": 315,
+          "sha256": "f78b8bd3afb0032ce290a0d4e342838f504d3424ce4f6762f5a4713eee47a443"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_lot.ex",
+          "bytes": 296,
+          "sha256": "b36a1c8508fb4e2f1860316db2c7acad82a562e9aaf908242e0c4ca5f5acb27d"
+        },
+        {
+          "path": "lib/group_stay/reservations/entitlement.ex",
+          "bytes": 216,
+          "sha256": "fc9add7c36e6c633f6e9a6b0a73ce0fb101b61c6ef9ca705270b4399e0cdcf5c"
+        },
+        {
+          "path": "lib/group_stay/reservations/funding.ex",
+          "bytes": 311,
+          "sha256": "456db19a56b4b8ab9724590a50d0e8230e09523c37788f7388e54a32cd390f5b"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 985,
+          "sha256": "cbfe5c5098aaa8000c72a91f4955fdc4573e4f7dd56822c0358d2be768f7e455"
+        },
+        {
+          "path": "lib/group_stay/reservations/operation.ex",
+          "bytes": 289,
+          "sha256": "43c45431e45080999d8651ae666c02293cbb76679a19857e52104f3650924595"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 1860,
+          "sha256": "87f6e38effdc148491c0d45c35e71f8fc9653c6c2a805bd98fda5bbd7eb1beae"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 541,
+          "sha256": "1081f469eb46a475959a90229f7262657d8fd44c6b884feef6cc5419b70ed620"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000001_add_cancellation_economics.exs",
+          "bytes": 1502,
+          "sha256": "5a3caa97bd83bdaf939a8a8ac3fa2b8074786f46467d447742f18b556bc10f5c"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000002_create_operations.exs",
+          "bytes": 430,
+          "sha256": "107e79165c01203ea96e95f43a7535db62529ec43d9a3e0716039e3e7885dee6"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000003_add_room_accounting.exs",
+          "bytes": 7216,
+          "sha256": "70408c787549fa5815daf549d48a4d33a96aa6314446e59199a2471404a68263"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 25551,
+          "sha256": "062046e82a4c594e8c145c59f985a226a19504e1557e7c813ff7a8b2ded715b2"
+        },
+        {
+          "path": "test/group_stay_web/controllers/cancellation_economics_test.exs",
+          "bytes": 11743,
+          "sha256": "c0817ad8d6f2a9e40c01e8dbb4afc4d65e9fb73db56990d3b83e2ab3d239552e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/durable_operations_test.exs",
+          "bytes": 7109,
+          "sha256": "dae7a1655e06f903d7183e79a5bead2a8b3a180fd0700a24640c783055e79dc2"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 16386,
+          "sha256": "fea4d0b5c1c2ed851354ada932a75ca97c98f77da05b9779c987d01b10cbebad"
+        },
+        {
+          "path": "test/group_stay_web/controllers/room_accounting_test.exs",
+          "bytes": 15806,
+          "sha256": "740fd2c800e5a726cbc8ff4c0f77214bc50d925e4f7dcdeba29c23de24f8d3ed"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    },
+    {
+      "milestone": 5,
+      "directory": "milestone-5",
+      "candidate_commit": "f7a981718d7d1b8cefb3bf88e7dbd735a2ff14f6",
+      "evaluation_report_sha256": "089b7c0b1461543615c4577bb6890752303bdf394093ba573ab602cc638c98ed",
+      "recorded_checkpoint_sha256": "df4dda47bc2854bc158d39561f2fde244923208f005e954923018117fffb9711",
+      "source_tree_sha256": "db645ec28061a8945252c492532a1383b6930be151c3dd521cf1d9d44b6c4fc2",
+      "bytes": 199426,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "0c7acd9c26ccb80bd87c96ba53e606ee06d72cb954a1453cad44222ce482ca4d"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 562,
+          "sha256": "9633b6155e501240d3e2239d2dd20f46cd54a55d0fb9e8b57a1bf2f7fce316e2"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 4921,
+          "sha256": "eaea417e7c0efcaa2d722c418cc57bb93ea9daaa27364a6672e10866a12e6950"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 650,
+          "sha256": "2ba0643fee86fe458577e88c4e441cbb662b90eabc5158bc887c362e404517c2"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "docs/requests/02-cancellation-economics.md",
+          "bytes": 5083,
+          "sha256": "e64bc2f3d9c1adfd20c531f0266f6a5cce10efe009f195e4126cb4e3662963ac"
+        },
+        {
+          "path": "docs/requests/03-durable-operations.md",
+          "bytes": 2765,
+          "sha256": "e12a3d8d58b0fee84942dfbd32737efb02ac2dc517e2a814aba17a40bc659ef8"
+        },
+        {
+          "path": "docs/requests/04-room-accounting-and-payment-reductions.md",
+          "bytes": 9199,
+          "sha256": "a0d1071890ebc91e88bf42066adb0d3fd7fcd47912788f6eb8b431ea6038cd88"
+        },
+        {
+          "path": "docs/requests/05-deposit-transfers.md",
+          "bytes": 4556,
+          "sha256": "73969a2891f8d1fab3732c48ce919f281b70a1eac88cec8ac246a7151c133b3c"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 23484,
+          "sha256": "4e9f839c7ee75bafead3701bb909fe34686541b412e85f897cbe808c3acffd27"
+        },
+        {
+          "path": "lib/group_stay/reservations/accounting.ex",
+          "bytes": 7486,
+          "sha256": "c7f2ed5548c7e25e7cd1d59fe496b1e86d3b632f0ee6b57b3d15094f8621684f"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_allocation.ex",
+          "bytes": 315,
+          "sha256": "f78b8bd3afb0032ce290a0d4e342838f504d3424ce4f6762f5a4713eee47a443"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_lot.ex",
+          "bytes": 296,
+          "sha256": "b36a1c8508fb4e2f1860316db2c7acad82a562e9aaf908242e0c4ca5f5acb27d"
+        },
+        {
+          "path": "lib/group_stay/reservations/entitlement.ex",
+          "bytes": 216,
+          "sha256": "fc9add7c36e6c633f6e9a6b0a73ce0fb101b61c6ef9ca705270b4399e0cdcf5c"
+        },
+        {
+          "path": "lib/group_stay/reservations/funding.ex",
+          "bytes": 360,
+          "sha256": "d35e1e549428dfa6f6c60aa06600ce277e59dbede66b20aab2e7a89d40c0b9ab"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 985,
+          "sha256": "cbfe5c5098aaa8000c72a91f4955fdc4573e4f7dd56822c0358d2be768f7e455"
+        },
+        {
+          "path": "lib/group_stay/reservations/operation.ex",
+          "bytes": 289,
+          "sha256": "43c45431e45080999d8651ae666c02293cbb76679a19857e52104f3650924595"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 1860,
+          "sha256": "87f6e38effdc148491c0d45c35e71f8fc9653c6c2a805bd98fda5bbd7eb1beae"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 541,
+          "sha256": "1081f469eb46a475959a90229f7262657d8fd44c6b884feef6cc5419b70ed620"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000001_add_cancellation_economics.exs",
+          "bytes": 1502,
+          "sha256": "5a3caa97bd83bdaf939a8a8ac3fa2b8074786f46467d447742f18b556bc10f5c"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000002_create_operations.exs",
+          "bytes": 430,
+          "sha256": "107e79165c01203ea96e95f43a7535db62529ec43d9a3e0716039e3e7885dee6"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000003_add_room_accounting.exs",
+          "bytes": 7216,
+          "sha256": "70408c787549fa5815daf549d48a4d33a96aa6314446e59199a2471404a68263"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000004_add_deposit_transfers.exs",
+          "bytes": 211,
+          "sha256": "02302ce5f20a963efb0298efb080d3c469f321ad13cfe8c8cbbaf234005a6440"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 27112,
+          "sha256": "0da481328549c92dc7749d58c65d1b7590a1c6f34dea2f0b05e82d039b74e865"
+        },
+        {
+          "path": "test/group_stay_web/controllers/cancellation_economics_test.exs",
+          "bytes": 11743,
+          "sha256": "c0817ad8d6f2a9e40c01e8dbb4afc4d65e9fb73db56990d3b83e2ab3d239552e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/deposit_transfers_test.exs",
+          "bytes": 9806,
+          "sha256": "fc2afe6244535eec7b86d9bc65348fdfe2582fb52e15c46f71e7488d5be6d113"
+        },
+        {
+          "path": "test/group_stay_web/controllers/durable_operations_test.exs",
+          "bytes": 7109,
+          "sha256": "dae7a1655e06f903d7183e79a5bead2a8b3a180fd0700a24640c783055e79dc2"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 16386,
+          "sha256": "fea4d0b5c1c2ed851354ada932a75ca97c98f77da05b9779c987d01b10cbebad"
+        },
+        {
+          "path": "test/group_stay_web/controllers/room_accounting_test.exs",
+          "bytes": 15806,
+          "sha256": "740fd2c800e5a726cbc8ff4c0f77214bc50d925e4f7dcdeba29c23de24f8d3ed"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    },
+    {
+      "milestone": 6,
+      "directory": "milestone-6",
+      "candidate_commit": "5a84e4effe28af06d5a862018f97abfeaf31c1bb",
+      "evaluation_report_sha256": "9d208d64df33eb9f28bf83885a84a9c93c8d4878f5d6c545db1a63045441c55a",
+      "recorded_checkpoint_sha256": "250def12c76daabea81b68d49379ace7097b8448df7358747b63d985f4e4db3a",
+      "source_tree_sha256": "eafe1d772e4aba347f2d549ba0f8d5707d48f0dd38adc1c96b8dc97976e97993",
+      "bytes": 228248,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "6fb73ea6aef4ae2bda81a6c3f4b5d429c6f753d2d7ba968f8dab3c36e731d772"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 565,
+          "sha256": "3a13a3a621f614f433a604ed72633a9a4504d698448c9e37fe2eec0c86be5733"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 5239,
+          "sha256": "30d85c41e382e829a42f87aaec5c4859f94cd6885a06c9f097ff37abc15a94e1"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 650,
+          "sha256": "2ba0643fee86fe458577e88c4e441cbb662b90eabc5158bc887c362e404517c2"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "docs/requests/02-cancellation-economics.md",
+          "bytes": 5083,
+          "sha256": "e64bc2f3d9c1adfd20c531f0266f6a5cce10efe009f195e4126cb4e3662963ac"
+        },
+        {
+          "path": "docs/requests/03-durable-operations.md",
+          "bytes": 2765,
+          "sha256": "e12a3d8d58b0fee84942dfbd32737efb02ac2dc517e2a814aba17a40bc659ef8"
+        },
+        {
+          "path": "docs/requests/04-room-accounting-and-payment-reductions.md",
+          "bytes": 9199,
+          "sha256": "a0d1071890ebc91e88bf42066adb0d3fd7fcd47912788f6eb8b431ea6038cd88"
+        },
+        {
+          "path": "docs/requests/05-deposit-transfers.md",
+          "bytes": 4556,
+          "sha256": "73969a2891f8d1fab3732c48ce919f281b70a1eac88cec8ac246a7151c133b3c"
+        },
+        {
+          "path": "docs/requests/06-daily-finance-report.md",
+          "bytes": 4441,
+          "sha256": "1d24cfff915f0696183a58ea5cbc3d5a448cf5da0fae735bdac9bce292dbeffb"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 23856,
+          "sha256": "0a2ce5ed8aec3af58ea5a5336b14a27e8fd92bb3b44abdf9f5200a3b89d97bce"
+        },
+        {
+          "path": "lib/group_stay/reservations/accounting.ex",
+          "bytes": 7486,
+          "sha256": "c7f2ed5548c7e25e7cd1d59fe496b1e86d3b632f0ee6b57b3d15094f8621684f"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_allocation.ex",
+          "bytes": 315,
+          "sha256": "f78b8bd3afb0032ce290a0d4e342838f504d3424ce4f6762f5a4713eee47a443"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_lot.ex",
+          "bytes": 296,
+          "sha256": "b36a1c8508fb4e2f1860316db2c7acad82a562e9aaf908242e0c4ca5f5acb27d"
+        },
+        {
+          "path": "lib/group_stay/reservations/entitlement.ex",
+          "bytes": 216,
+          "sha256": "fc9add7c36e6c633f6e9a6b0a73ce0fb101b61c6ef9ca705270b4399e0cdcf5c"
+        },
+        {
+          "path": "lib/group_stay/reservations/finance.ex",
+          "bytes": 9073,
+          "sha256": "455632fbf35a3faaa8a6c8cbd7b4827a21486b4f7e1b4239c43824b984200ca5"
+        },
+        {
+          "path": "lib/group_stay/reservations/funding.ex",
+          "bytes": 360,
+          "sha256": "d35e1e549428dfa6f6c60aa06600ce277e59dbede66b20aab2e7a89d40c0b9ab"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 985,
+          "sha256": "cbfe5c5098aaa8000c72a91f4955fdc4573e4f7dd56822c0358d2be768f7e455"
+        },
+        {
+          "path": "lib/group_stay/reservations/operation.ex",
+          "bytes": 289,
+          "sha256": "43c45431e45080999d8651ae666c02293cbb76679a19857e52104f3650924595"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 2399,
+          "sha256": "6b5907bcae5404208cf7f700bff07703c5fb8a5298245f3cf514f156ec50c15e"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 607,
+          "sha256": "6de7277679bedc1e56dd1154efbb6ef73bb06b2a06e710fcfcc978f3f9032287"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000001_add_cancellation_economics.exs",
+          "bytes": 1502,
+          "sha256": "5a3caa97bd83bdaf939a8a8ac3fa2b8074786f46467d447742f18b556bc10f5c"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000002_create_operations.exs",
+          "bytes": 430,
+          "sha256": "107e79165c01203ea96e95f43a7535db62529ec43d9a3e0716039e3e7885dee6"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000003_add_room_accounting.exs",
+          "bytes": 7216,
+          "sha256": "70408c787549fa5815daf549d48a4d33a96aa6314446e59199a2471404a68263"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000004_add_deposit_transfers.exs",
+          "bytes": 211,
+          "sha256": "02302ce5f20a963efb0298efb080d3c469f321ad13cfe8c8cbbaf234005a6440"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000005_add_finance_reporting.exs",
+          "bytes": 513,
+          "sha256": "2be8111bd4d6c419702144b25099c399e691941258c53a941d40c14924227f54"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 29597,
+          "sha256": "220c9328bcf1083535e657066897b465c9980bc0253b2b306205de0fa69f7fcd"
+        },
+        {
+          "path": "test/group_stay_web/controllers/cancellation_economics_test.exs",
+          "bytes": 11743,
+          "sha256": "c0817ad8d6f2a9e40c01e8dbb4afc4d65e9fb73db56990d3b83e2ab3d239552e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/deposit_transfers_test.exs",
+          "bytes": 9806,
+          "sha256": "fc2afe6244535eec7b86d9bc65348fdfe2582fb52e15c46f71e7488d5be6d113"
+        },
+        {
+          "path": "test/group_stay_web/controllers/durable_operations_test.exs",
+          "bytes": 7109,
+          "sha256": "dae7a1655e06f903d7183e79a5bead2a8b3a180fd0700a24640c783055e79dc2"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/finance_report_test.exs",
+          "bytes": 11012,
+          "sha256": "12197d37416143b1900fd145f71ae43ea6e33092541a4807d5e26ec90890bddd"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 16386,
+          "sha256": "fea4d0b5c1c2ed851354ada932a75ca97c98f77da05b9779c987d01b10cbebad"
+        },
+        {
+          "path": "test/group_stay_web/controllers/room_accounting_test.exs",
+          "bytes": 15806,
+          "sha256": "740fd2c800e5a726cbc8ff4c0f77214bc50d925e4f7dcdeba29c23de24f8d3ed"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    },
+    {
+      "milestone": 7,
+      "directory": "milestone-7",
+      "candidate_commit": "c3335d208acacd7796aa755ea069911494eb14eb",
+      "evaluation_report_sha256": "09cb271f034974d5e0e79d093ed536f0dbf4136e46ce8263ff85003c6f2d7287",
+      "recorded_checkpoint_sha256": "fa03636687bf66f3a3e3022fb04042dc96c2d9551285ec90d330497f8849c261",
+      "source_tree_sha256": "7a8c098827c8669865b69ea2f9bb220ff07d8d9b7a02dfd84d7002e509981b27",
+      "bytes": 248741,
+      "files": [
+        {
+          "path": ".formatter.exs",
+          "bytes": 170,
+          "sha256": "a44a43d777033eb6c64e0101b7469611c2def3b377b04c9d6b2a8620a347d385"
+        },
+        {
+          "path": ".gitignore",
+          "bytes": 661,
+          "sha256": "7243335f537dedf046c226f5acf76c74b01ca01fa7cea9c297be15b70c0c2cd3"
+        },
+        {
+          "path": ".group-stay-work.json",
+          "bytes": 74,
+          "sha256": "2215ea350194bf347f428fb16538de2346569a5f839b37c2c70ca54201b77403"
+        },
+        {
+          "path": ".tool-versions",
+          "bytes": 36,
+          "sha256": "4f9d9bbde361dfd99584f2b2e9436bda99f3ec78b93badc6a1f66b0edec5b39f"
+        },
+        {
+          "path": "README.md",
+          "bytes": 636,
+          "sha256": "0a07d956edff76bbb95863b32d458a5c9eee7e82fa61b809dc69e40c1b0b6c7a"
+        },
+        {
+          "path": "TASK.md",
+          "bytes": 557,
+          "sha256": "f835c4bc87cf856f666ccaad08961fab66b4c24ed4b5728f3c2553ae40b92958"
+        },
+        {
+          "path": "config/config.exs",
+          "bytes": 1065,
+          "sha256": "5aa2129129832ca91de824173e7ec2f160350199d5dc5dc8148f969153474cc8"
+        },
+        {
+          "path": "config/dev.exs",
+          "bytes": 2018,
+          "sha256": "96e875493ffe309a44b76989baf6a8fd3215170055fb6996ff75ff71d2f98287"
+        },
+        {
+          "path": "config/prod.exs",
+          "bytes": 202,
+          "sha256": "6f31f19839f666aaa9de8e0ba49229b1a1ccba3bad7bb3f6cd0ed1ecf89f997d"
+        },
+        {
+          "path": "config/runtime.exs",
+          "bytes": 3591,
+          "sha256": "d6d79bb45719fb755e26a239652537ff88340506a6149841345e1ae87619d1ec"
+        },
+        {
+          "path": "config/test.exs",
+          "bytes": 1000,
+          "sha256": "3e77ea7c33a5da6ddb66364f2b98582a764ba4538d9f81817b589564b6f6a7d6"
+        },
+        {
+          "path": "docs/API.md",
+          "bytes": 5123,
+          "sha256": "9a331b0015b5b6fddc20edf156a8959d10c80b07d2361aaddb538c6e69eb5468"
+        },
+        {
+          "path": "docs/PRODUCT.md",
+          "bytes": 1254,
+          "sha256": "97758d427e89666b4416cf63f459f574d73b8f74337cf9f3915050595e50eff5"
+        },
+        {
+          "path": "docs/RUNBOOK.md",
+          "bytes": 650,
+          "sha256": "2ba0643fee86fe458577e88c4e441cbb662b90eabc5158bc887c362e404517c2"
+        },
+        {
+          "path": "docs/requests/01-operational-core.md",
+          "bytes": 3841,
+          "sha256": "a91386a684e477d78855af94d0fd2981dd7d87905bf3782c4e97cdce493eef83"
+        },
+        {
+          "path": "docs/requests/02-cancellation-economics.md",
+          "bytes": 5083,
+          "sha256": "e64bc2f3d9c1adfd20c531f0266f6a5cce10efe009f195e4126cb4e3662963ac"
+        },
+        {
+          "path": "docs/requests/03-durable-operations.md",
+          "bytes": 2765,
+          "sha256": "e12a3d8d58b0fee84942dfbd32737efb02ac2dc517e2a814aba17a40bc659ef8"
+        },
+        {
+          "path": "docs/requests/04-room-accounting-and-payment-reductions.md",
+          "bytes": 9199,
+          "sha256": "a0d1071890ebc91e88bf42066adb0d3fd7fcd47912788f6eb8b431ea6038cd88"
+        },
+        {
+          "path": "docs/requests/05-deposit-transfers.md",
+          "bytes": 4556,
+          "sha256": "73969a2891f8d1fab3732c48ce919f281b70a1eac88cec8ac246a7151c133b3c"
+        },
+        {
+          "path": "docs/requests/06-daily-finance-report.md",
+          "bytes": 4441,
+          "sha256": "1d24cfff915f0696183a58ea5cbc3d5a448cf5da0fae735bdac9bce292dbeffb"
+        },
+        {
+          "path": "docs/requests/07-period-close.md",
+          "bytes": 3371,
+          "sha256": "dbe0382c50fcff908809e9d757123f06641067b91348a62b8a12b5a8ff7e331e"
+        },
+        {
+          "path": "lib/group_stay.ex",
+          "bytes": 255,
+          "sha256": "e7dfb7bfcedaa660fc85b771290debaf75bd592fa8ba95b891b1252b78ebbc5e"
+        },
+        {
+          "path": "lib/group_stay/application.ex",
+          "bytes": 1316,
+          "sha256": "9ff720e957901cc323ef3d5b51d90623837fc5626f895dfec675060295fc257a"
+        },
+        {
+          "path": "lib/group_stay/repo.ex",
+          "bytes": 110,
+          "sha256": "49bcaa8355e35a329c0b925d46a14198759f2860cdb962b6e1304a5d6d3311c6"
+        },
+        {
+          "path": "lib/group_stay/reservations.ex",
+          "bytes": 24114,
+          "sha256": "6be33f6f8530bf24061c2506118fb8974c1dc319ee3fdec24b4f08e57f70a79d"
+        },
+        {
+          "path": "lib/group_stay/reservations/accounting.ex",
+          "bytes": 7486,
+          "sha256": "c7f2ed5548c7e25e7cd1d59fe496b1e86d3b632f0ee6b57b3d15094f8621684f"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_allocation.ex",
+          "bytes": 315,
+          "sha256": "f78b8bd3afb0032ce290a0d4e342838f504d3424ce4f6762f5a4713eee47a443"
+        },
+        {
+          "path": "lib/group_stay/reservations/credit_lot.ex",
+          "bytes": 296,
+          "sha256": "b36a1c8508fb4e2f1860316db2c7acad82a562e9aaf908242e0c4ca5f5acb27d"
+        },
+        {
+          "path": "lib/group_stay/reservations/entitlement.ex",
+          "bytes": 216,
+          "sha256": "fc9add7c36e6c633f6e9a6b0a73ce0fb101b61c6ef9ca705270b4399e0cdcf5c"
+        },
+        {
+          "path": "lib/group_stay/reservations/finance.ex",
+          "bytes": 10883,
+          "sha256": "2e28a85a84f2e8d340840643020d2571dbc09d5b17e97ae576cc9d81f193d314"
+        },
+        {
+          "path": "lib/group_stay/reservations/funding.ex",
+          "bytes": 360,
+          "sha256": "d35e1e549428dfa6f6c60aa06600ce277e59dbede66b20aab2e7a89d40c0b9ab"
+        },
+        {
+          "path": "lib/group_stay/reservations/group.ex",
+          "bytes": 985,
+          "sha256": "cbfe5c5098aaa8000c72a91f4955fdc4573e4f7dd56822c0358d2be768f7e455"
+        },
+        {
+          "path": "lib/group_stay/reservations/operation.ex",
+          "bytes": 289,
+          "sha256": "43c45431e45080999d8651ae666c02293cbb76679a19857e52104f3650924595"
+        },
+        {
+          "path": "lib/group_stay_web.ex",
+          "bytes": 1463,
+          "sha256": "9c1fd213aba8d36333392acb61aa505d6e4b38afd20a90963fb2e0aa05032e64"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/error_json.ex",
+          "bytes": 625,
+          "sha256": "ae399a503f541fb19986c0e197dc41e13574b649b2f28fbd16c6c40fcdfdaa27"
+        },
+        {
+          "path": "lib/group_stay_web/controllers/partner_controller.ex",
+          "bytes": 2399,
+          "sha256": "6b5907bcae5404208cf7f700bff07703c5fb8a5298245f3cf514f156ec50c15e"
+        },
+        {
+          "path": "lib/group_stay_web/endpoint.ex",
+          "bytes": 1466,
+          "sha256": "c64add48dc232f30b0f9a25961530bafa7e6368f247491ddc4fdd9d0669332e0"
+        },
+        {
+          "path": "lib/group_stay_web/router.ex",
+          "bytes": 607,
+          "sha256": "6de7277679bedc1e56dd1154efbb6ef73bb06b2a06e710fcfcc978f3f9032287"
+        },
+        {
+          "path": "lib/group_stay_web/telemetry.ex",
+          "bytes": 3017,
+          "sha256": "f60b2ef4b0538bb2876af120906ce111333c5aae133d3285f278faacd8dc4f0a"
+        },
+        {
+          "path": "mix.exs",
+          "bytes": 1825,
+          "sha256": "1a3d95760989937f3a88457b6d18b9374280241159aa652bf670917ca6a83abd"
+        },
+        {
+          "path": "mix.lock",
+          "bytes": 9044,
+          "sha256": "baff818a5fb36e75a5fe46cd512bab972d7e38b32f3b269d5a7fd31f46224e05"
+        },
+        {
+          "path": "priv/repo/migrations/.formatter.exs",
+          "bytes": 52,
+          "sha256": "0214526079b381af52379d2b1fff614512fe4f5bb9a04394ef3246e5b1f61c87"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000000_create_groups.exs",
+          "bytes": 884,
+          "sha256": "cd59e505c19ebc707464d08946e63af81c59cf3030ff169e1bf1ac884ff60fbf"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000001_add_cancellation_economics.exs",
+          "bytes": 1502,
+          "sha256": "5a3caa97bd83bdaf939a8a8ac3fa2b8074786f46467d447742f18b556bc10f5c"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000002_create_operations.exs",
+          "bytes": 430,
+          "sha256": "107e79165c01203ea96e95f43a7535db62529ec43d9a3e0716039e3e7885dee6"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000003_add_room_accounting.exs",
+          "bytes": 7216,
+          "sha256": "70408c787549fa5815daf549d48a4d33a96aa6314446e59199a2471404a68263"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000004_add_deposit_transfers.exs",
+          "bytes": 211,
+          "sha256": "02302ce5f20a963efb0298efb080d3c469f321ad13cfe8c8cbbaf234005a6440"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000005_add_finance_reporting.exs",
+          "bytes": 513,
+          "sha256": "2be8111bd4d6c419702144b25099c399e691941258c53a941d40c14924227f54"
+        },
+        {
+          "path": "priv/repo/migrations/20260905000006_add_finance_period_close.exs",
+          "bytes": 303,
+          "sha256": "6c206abe82bb808fbda53f67fba3d2149c7fb0b0bd03a6227a8448dc8587edce"
+        },
+        {
+          "path": "priv/repo/seeds.exs",
+          "bytes": 355,
+          "sha256": "cfad8189d85d413683a98eb2f12bffd56cba5ec9761d75c6697f6d56401f81d5"
+        },
+        {
+          "path": "priv/static/favicon.ico",
+          "bytes": 152,
+          "sha256": "01723aeae3ce3b5195a8f42e3eb6e9018a8c08b7acda4ed382b31341811f0a8a"
+        },
+        {
+          "path": "priv/static/robots.txt",
+          "bytes": 203,
+          "sha256": "f994bfae2c1db1221ac049f1097776b444048e0b0a7705d33ea511b610bed115"
+        },
+        {
+          "path": "test/group_stay/persistence_test.exs",
+          "bytes": 34302,
+          "sha256": "ba6e12d229ef645874dd61221b020a9bb399e948d224ee4d9935ec993434d6ca"
+        },
+        {
+          "path": "test/group_stay_web/controllers/cancellation_economics_test.exs",
+          "bytes": 11743,
+          "sha256": "c0817ad8d6f2a9e40c01e8dbb4afc4d65e9fb73db56990d3b83e2ab3d239552e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/deposit_transfers_test.exs",
+          "bytes": 9806,
+          "sha256": "fc2afe6244535eec7b86d9bc65348fdfe2582fb52e15c46f71e7488d5be6d113"
+        },
+        {
+          "path": "test/group_stay_web/controllers/durable_operations_test.exs",
+          "bytes": 7109,
+          "sha256": "dae7a1655e06f903d7183e79a5bead2a8b3a180fd0700a24640c783055e79dc2"
+        },
+        {
+          "path": "test/group_stay_web/controllers/error_json_test.exs",
+          "bytes": 362,
+          "sha256": "e4591533e8116c8792508984d33c650485fdee1e8ee5154cb865cbce77ccda6e"
+        },
+        {
+          "path": "test/group_stay_web/controllers/finance_report_test.exs",
+          "bytes": 11012,
+          "sha256": "12197d37416143b1900fd145f71ae43ea6e33092541a4807d5e26ec90890bddd"
+        },
+        {
+          "path": "test/group_stay_web/controllers/partner_controller_test.exs",
+          "bytes": 16386,
+          "sha256": "fea4d0b5c1c2ed851354ada932a75ca97c98f77da05b9779c987d01b10cbebad"
+        },
+        {
+          "path": "test/group_stay_web/controllers/period_close_test.exs",
+          "bytes": 10170,
+          "sha256": "d39a3ec389088f91e2861a275f40407262aa39d9d8eff60c982679c9c94e80dd"
+        },
+        {
+          "path": "test/group_stay_web/controllers/room_accounting_test.exs",
+          "bytes": 15806,
+          "sha256": "740fd2c800e5a726cbc8ff4c0f77214bc50d925e4f7dcdeba29c23de24f8d3ed"
+        },
+        {
+          "path": "test/support/conn_case.ex",
+          "bytes": 1117,
+          "sha256": "2398193dfaf8ac72578b09084ceec603d6c190007dc94bc594591e9ffd01170d"
+        },
+        {
+          "path": "test/support/data_case.ex",
+          "bytes": 1672,
+          "sha256": "29a0ad1bfe5ae4e63c2212cdb1b72fffa5e85585c01f03a41046e8e23b903874"
+        },
+        {
+          "path": "test/test_helper.exs",
+          "bytes": 71,
+          "sha256": "395feafe1bcf7538265f333e34322fe1ae4604b85531ab092c81cd55fa22b973"
+        }
+      ],
+      "checkpoint_verification": {
+        "status": "matched_recorded_hash",
+        "excluded_post_evaluation_paths": []
+      }
+    }
+  ]
+}

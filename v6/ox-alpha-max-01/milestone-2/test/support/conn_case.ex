@@ -1,0 +1,129 @@
+defmodule GroupStayWeb.ConnCase do
+  @moduledoc """
+  This module defines the test case to be used by
+  tests that require setting up a connection.
+
+  Such tests rely on `Phoenix.ConnTest` and also
+  import other functionality to make it easier
+  to build common data structures and query the data layer.
+
+  Finally, if the test case interacts with the database,
+  we enable the SQL sandbox, so changes done to the database
+  are reverted at the end of every test. If you are using
+  PostgreSQL, you can even run database tests asynchronously
+  by setting `use GroupStayWeb.ConnCase, async: true`, although
+  this option is not recommended for other databases.
+  """
+
+  use ExUnit.CaseTemplate
+
+  using do
+    quote do
+      # The default endpoint for testing
+      @endpoint GroupStayWeb.Endpoint
+
+      use GroupStayWeb, :verified_routes
+
+      # Import conveniences for testing with connections
+      import Plug.Conn
+      import Phoenix.ConnTest
+      import GroupStayWeb.ConnCase
+    end
+  end
+
+  @endpoint GroupStayWeb.Endpoint
+
+  import Phoenix.ConnTest
+
+  @open_operation %{
+    "operation_id" => "op-1001",
+    "type" => "open_group",
+    "occurred_on" => "2026-10-03",
+    "group_id" => "group-81",
+    "guest_id" => "guest-22",
+    "property_id" => "ams-canal",
+    "arrival_on" => "2026-12-10",
+    "departure_on" => "2026-12-13",
+    "rate_plan" => "flexible",
+    "rooms" => [
+      %{"room_id" => "room-a", "nightly_rate_cents" => 15000},
+      %{"room_id" => "room-b", "nightly_rate_cents" => 17500}
+    ]
+  }
+
+  def open_operation(overrides \\ %{}) do
+    Map.merge(@open_operation, overrides)
+  end
+
+  def payment_operation(group_id, amount_cents, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "operation_id" => "op-payment",
+        "type" => "record_cash_payment",
+        "occurred_on" => "2026-11-01",
+        "group_id" => group_id,
+        "amount_cents" => amount_cents
+      },
+      overrides
+    )
+  end
+
+  def reschedule_operation(group_id, new_arrival_on, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "operation_id" => "op-reschedule",
+        "type" => "reschedule_group",
+        "occurred_on" => "2026-11-01",
+        "group_id" => group_id,
+        "new_arrival_on" => new_arrival_on
+      },
+      overrides
+    )
+  end
+
+  def cancel_operation(group_id, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "operation_id" => "op-cancel",
+        "type" => "cancel_group",
+        "occurred_on" => "2026-11-20",
+        "group_id" => group_id
+      },
+      overrides
+    )
+  end
+
+  def apply_credit_operation(group_id, amount_cents, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "operation_id" => "op-apply-credit",
+        "type" => "apply_hotel_credit",
+        "occurred_on" => "2027-02-10",
+        "group_id" => group_id,
+        "amount_cents" => amount_cents
+      },
+      overrides
+    )
+  end
+
+  def post_operations(conn, operations) do
+    post(conn, "/api/v1/partner-batches", %{"operations" => operations})
+  end
+
+  def get_group(conn, group_id) do
+    get(conn, "/api/v1/groups/#{group_id}")
+  end
+
+  def get_ledger(conn, query \\ []) do
+    get(conn, "/api/v1/ledger", query)
+  end
+
+  def get_guest_credit(conn, guest_id, query \\ []) do
+    get(conn, "/api/v1/guests/#{guest_id}/credit", query)
+  end
+
+  setup tags do
+    GroupStay.DataCase.setup_sandbox(tags)
+    {:ok, conn: Phoenix.ConnTest.build_conn()}
+  end
+end

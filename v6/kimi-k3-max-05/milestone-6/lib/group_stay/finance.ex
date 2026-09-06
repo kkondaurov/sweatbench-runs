@@ -1,0 +1,395 @@
+defmodule GroupStay.Finance do
+  @moduledoc """
+  Daily finance reporting over held cash and hotel-credit liability.
+
+  Reporting starts once with a `start_finance_reporting` partner operation.
+  The financial state immediately before that operation is processed becomes
+  the opening position on `starts_on`; operations processed afterwards record
+  movements whose posting date is the later of their `occurred_on` and
+  `starts_on`. Inside one batch, operations before the start feed the opening
+  position and operations after it post movements.
+
+  Cash movements are signed net amounts per property in their named
+  classification (a chargeback reverses an earlier refund with negative
+  refunded and positive charged-back rows). Credit movements are positive
+  magnitudes per lot; liability enters through issuance and leaves through
+  expiry, consumption, revocation, and shortfall absorption. Applying or
+  restoring credit never moves liability. A lot's unused remainder expires on
+  the date after its `expires_on`; that movement has no partner operation, so
+  it is derived at read time from each lot's current remainder plus the
+  dormant revocations and restore-expiries that happened after the boundary.
+  Reading a report never changes a report or any domain state.
+  """
+
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias GroupStay.Credits
+  alias GroupStay.Credits.CreditApplication
+  alias GroupStay.Credits.CreditLot
+  alias GroupStay.Finance.Movement
+  alias GroupStay.Finance.OpeningCash
+  alias GroupStay.Finance.ReportingState
+  alias GroupStay.Groups.CashAllocation
+  alias GroupStay.Groups.Group
+  alias GroupStay.Repo
+
+  # Cash classifications that change held cash, and the sign with which each
+  # stored amount moves it. Stored amounts are themselves signed (a
+  # chargeback records a negative refund), so the sign is a direction only.
+  @cash_signs %{
+    "received" => 1,
+    "transferred_in" => 1,
+    "transferred_out" => -1,
+    "refunded" => -1,
+    "retained" => -1,
+    "converted" => -1,
+    "reduced" => -1,
+    "charged_back" => -1
+  }
+
+  # Credit classifications that change liability. Dormant revocations (an
+  # entitlement revoked after its lot expired) move no liability and are
+  # excluded; they only feed the boundary derivation.
+  @credit_signs %{
+    "issued" => 1,
+    "consumed" => -1,
+    "revoked" => -1,
+    "absorbed" => -1,
+    "expired_restore" => -1
+  }
+
+  # Cash movement keys in report order.
+  @cash_movement_keys [
+    {"received", "received_cents"},
+    {"transferred_in", "transferred_in_cents"},
+    {"transferred_out", "transferred_out_cents"},
+    {"refunded", "refunded_cents"},
+    {"retained", "retained_cents"},
+    {"converted", "converted_to_credit_cents"},
+    {"reduced", "reduced_cents"},
+    {"charged_back", "charged_back_cents"}
+  ]
+
+  # Credit movement keys in report order; the day's expiry combines the
+  # recorded restore-expiries with lots crossing their expiry boundary.
+  @credit_movement_keys [
+    {"issued", "issued_cents"},
+    {"expired", "expired_cents"},
+    {"consumed", "consumed_cents"},
+    {"revoked", "revoked_cents"},
+    {"absorbed", "absorbed_cents"}
+  ]
+
+  @doc """
+  Whether finance reporting has started.
+  """
+  def started? do
+    Repo.exists?(ReportingState)
+  end
+
+  @doc """
+  The reporting start date, or `nil` before reporting started.
+  """
+  def starts_on do
+    Repo.one(from r in ReportingState, select: r.starts_on)
+  end
+
+  @doc """
+  Turns reporting on with the given start date, snapshotting the opening
+  position: held cash per property and the company-wide credit liability as
+  of `starts_on`. Both describe the state immediately before this operation
+  is processed, including operations already committed in the same batch.
+  Returns `:already_started` when reporting is already on; the caller
+  guarantees the date is valid.
+  """
+  def start(%Date{} = starts_on, operation_id) do
+    if started?() do
+      :already_started
+    else
+      opening_cash = held_by_property()
+      opening_liability = Credits.liability_cents(starts_on)
+
+      %{
+        singleton: "current",
+        operation_id: operation_id,
+        starts_on: starts_on,
+        opening_liability_cents: opening_liability
+      }
+      |> ReportingState.changeset()
+      |> Repo.insert!()
+
+      Enum.each(opening_cash, fn {property_id, held} ->
+        if held != 0 do
+          %OpeningCash{}
+          |> change(property_id: property_id, opening_held_cents: held)
+          |> Repo.insert!()
+        end
+      end)
+
+      :ok
+    end
+  end
+
+  # Held cash summed per property.
+  defp held_by_property do
+    from(a in CashAllocation,
+      join: g in Group,
+      on: a.group_id == g.id,
+      where: a.status == "held",
+      group_by: g.property_id,
+      select: {g.property_id, sum(a.amount_cents)}
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  The reporting posting date of an operation processed now: the later of its
+  `occurred_on` and the reporting start date, or `nil` before reporting
+  started (when operations only feed a future opening position). Only safe
+  after the operation passed common validation.
+  """
+  def posting_date(op) do
+    {:ok, occurred} = Date.from_iso8601(op["occurred_on"])
+
+    case starts_on() do
+      nil -> nil
+      %Date{} = starts_on -> later(occurred, starts_on)
+    end
+  end
+
+  defp later(a, b) do
+    if Date.compare(a, b) == :lt, do: b, else: a
+  end
+
+  @doc """
+  Records finance movements for one applied operation inside its transaction.
+  Each entry is a map with `posting_date`, `kind`, `amount_cents`, and
+  optionally `property_id`, `credit_lot_id`, and `operation_id`. Entries
+  without a posting date (reporting not started) or with a zero amount leave
+  no movement.
+  """
+  def record(movements) when is_list(movements) do
+    movements
+    |> Enum.filter(fn movement ->
+      movement[:posting_date] != nil and movement[:amount_cents] != 0
+    end)
+    |> Enum.each(fn movement ->
+      %Movement{}
+      |> change(
+        posting_date: movement[:posting_date],
+        kind: movement[:kind],
+        amount_cents: movement[:amount_cents],
+        operation_id: movement[:operation_id],
+        property_id: movement[:property_id],
+        credit_lot_id: movement[:credit_lot_id]
+      )
+      |> Repo.insert!()
+    end)
+
+    :ok
+  end
+
+  @doc """
+  The daily report for the given date, or `nil` when reporting has not
+  started or the date precedes the start. A report contains the date, its
+  status, the per-property cash rows ordered by property (a property with
+  zero opening, closing, and every movement is omitted), and the company-wide
+  credit position. Reading a report never changes state.
+  """
+  def daily_report(%Date{} = date) do
+    case Repo.one(ReportingState) do
+      nil ->
+        nil
+
+      %ReportingState{} = state ->
+        if Date.compare(date, state.starts_on) == :lt do
+          nil
+        else
+          movements = Repo.all(from m in Movement, order_by: [asc: m.id])
+          boundaries = boundary_expiries(movements, state.starts_on)
+
+          %{
+            "date" => Date.to_string(date),
+            "status" => "open",
+            "cash" => cash_rows(date, movements),
+            "credit" => credit_position(date, state, movements, boundaries)
+          }
+        end
+    end
+  end
+
+  ## credit position
+
+  # The credit object: opening liability, the day's movements, and closing
+  # liability. The day's expiry combines recorded restore-expiries with the
+  # derived expiry of lots crossing their boundary on this date.
+  defp credit_position(date, state, movements, boundaries) do
+    credit = Enum.filter(movements, &Map.has_key?(@credit_signs, &1.kind))
+    on_date = Enum.filter(credit, &same_day?(&1.posting_date, date))
+
+    derived_on = Map.get(boundaries, date, 0)
+
+    opening =
+      state.opening_liability_cents + signed_credit(credit, :before, date) -
+        derived_before(boundaries, date)
+
+    closing = opening + signed_credit(on_date) - derived_on
+
+    storage_expired_on = sum_by_kind(on_date, "expired_restore")
+
+    movements_map =
+      Map.new(@credit_movement_keys, fn {kind, key} ->
+        amount =
+          if kind == "expired" do
+            storage_expired_on + derived_on
+          else
+            sum_by_kind(on_date, kind)
+          end
+
+        {key, amount}
+      end)
+
+    %{
+      "opening_liability_cents" => opening,
+      "movements" => movements_map,
+      "closing_liability_cents" => closing
+    }
+  end
+
+  # The expiry movements on the calendar: for every lot not already expired
+  # when reporting started, the unused remainder frozen at its boundary (the
+  # date after `expires_on`). The frozen amount is reconstructed from the
+  # lot's current remainder plus entitlement revocations that happened after
+  # the boundary (dormant, since the remainder had already left liability),
+  # minus restorations after the boundary, whose expiry was itself recorded
+  # on their own posting dates.
+  defp boundary_expiries(movements, starts_on) do
+    lots = Repo.all(from l in CreditLot, select: [:id, :amount_cents, :expires_on])
+    applied = applied_by_lot()
+
+    dormant = sums_by_lot(movements, "revoked_dormant")
+    restored = sums_by_lot(movements, "expired_restore")
+
+    lots
+    |> Enum.filter(&(Date.compare(&1.expires_on, starts_on) != :lt))
+    |> Enum.map(fn lot ->
+      remainder = lot.amount_cents - Map.get(applied, lot.id, 0)
+
+      amount =
+        remainder + Map.get(dormant, lot.id, 0) - Map.get(restored, lot.id, 0)
+
+      {Date.add(lot.expires_on, 1), amount}
+    end)
+    |> Enum.filter(fn {_boundary_date, amount} -> amount != 0 end)
+    |> Enum.reduce(%{}, fn {boundary_date, amount}, totals ->
+      Map.update(totals, boundary_date, amount, &(&1 + amount))
+    end)
+  end
+
+  defp applied_by_lot do
+    from(a in CreditApplication,
+      group_by: a.credit_lot_id,
+      select: {a.credit_lot_id, sum(a.amount_cents)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  defp sums_by_lot(movements, kind) do
+    movements
+    |> Enum.filter(&(&1.kind == kind and not is_nil(&1.credit_lot_id)))
+    |> Enum.reduce(%{}, fn movement, totals ->
+      Map.update(
+        totals,
+        movement.credit_lot_id,
+        movement.amount_cents,
+        &(&1 + movement.amount_cents)
+      )
+    end)
+  end
+
+  defp signed_credit(rows, :before, date) do
+    signed_credit(Enum.filter(rows, &before_day?(&1.posting_date, date)))
+  end
+
+  defp signed_credit(rows) do
+    Enum.reduce(rows, 0, fn row, total ->
+      total + @credit_signs[row.kind] * row.amount_cents
+    end)
+  end
+
+  defp derived_before(boundaries, date) do
+    boundaries
+    |> Enum.filter(fn {boundary_date, _amount} -> before_day?(boundary_date, date) end)
+    |> Enum.reduce(0, fn {_boundary_date, amount}, total -> total + amount end)
+  end
+
+  ## cash rows
+
+  # The cash rows per property: opening held, the day's movements, and
+  # closing held. A property joins the report once any opening snapshot or
+  # movement names it, and stays only while any figure is nonzero.
+  defp cash_rows(date, movements) do
+    cash = Enum.filter(movements, &Map.has_key?(@cash_signs, &1.kind))
+
+    opening_cash =
+      Repo.all(OpeningCash)
+      |> Map.new(&{&1.property_id, &1.opening_held_cents})
+
+    properties =
+      (Map.keys(opening_cash) ++ Enum.map(cash, & &1.property_id))
+      |> Enum.uniq()
+
+    properties
+    |> Enum.map(fn property_id ->
+      rows = Enum.filter(cash, &(&1.property_id == property_id))
+      on_date = Enum.filter(rows, &same_day?(&1.posting_date, date))
+
+      opening =
+        Map.get(opening_cash, property_id, 0) + signed_cash(rows, :before, date)
+
+      movements_map =
+        Map.new(@cash_movement_keys, fn {kind, key} ->
+          {key, sum_by_kind(on_date, kind)}
+        end)
+
+      closing = opening + signed_cash(on_date)
+
+      %{
+        "property_id" => property_id,
+        "opening_held_cents" => opening,
+        "movements" => movements_map,
+        "closing_held_cents" => closing
+      }
+    end)
+    |> Enum.filter(fn row ->
+      row["opening_held_cents"] != 0 or row["closing_held_cents"] != 0 or
+        Enum.any?(row["movements"], fn {_key, amount} -> amount != 0 end)
+    end)
+    |> Enum.sort_by(& &1["property_id"])
+  end
+
+  defp signed_cash(rows, :before, date) do
+    signed_cash(Enum.filter(rows, &before_day?(&1.posting_date, date)))
+  end
+
+  defp signed_cash(rows) do
+    Enum.reduce(rows, 0, fn row, total ->
+      total + @cash_signs[row.kind] * row.amount_cents
+    end)
+  end
+
+  defp sum_by_kind(rows, kind) do
+    rows
+    |> Enum.filter(&(&1.kind == kind))
+    |> sum_amounts()
+  end
+
+  defp sum_amounts(rows) do
+    Enum.reduce(rows, 0, &(&1.amount_cents + &2))
+  end
+
+  defp same_day?(a, b), do: Date.compare(a, b) == :eq
+  defp before_day?(a, b), do: Date.compare(a, b) == :lt
+end

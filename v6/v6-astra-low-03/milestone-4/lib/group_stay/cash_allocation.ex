@@ -1,0 +1,12 @@
+defmodule GroupStay.CashAllocation do
+  use Ecto.Schema
+
+  schema "cash_allocations" do
+    field :group_id, :string
+    field :room_id, :string
+    field :payment_operation_id, :string
+    field :funding_order, :integer, default: 0
+    field :amount_cents, :integer
+    field :disposition, :string, default: "held"
+  end
+end

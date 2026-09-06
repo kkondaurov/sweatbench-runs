@@ -1,0 +1,23 @@
+defmodule GroupStay.CreditLot do
+  use Ecto.Schema
+
+  import Ecto.Changeset
+
+  alias GroupStay.CreditApplication
+
+  schema "credit_lots" do
+    field :guest_id, :string
+    field :source_operation_id, :string
+    field :remaining_cents, :integer
+    field :expires_on, :date
+
+    has_many :credit_applications, CreditApplication
+  end
+
+  def changeset(credit_lot, attrs) do
+    credit_lot
+    |> cast(attrs, [:guest_id, :source_operation_id, :remaining_cents, :expires_on])
+    |> validate_required([:guest_id, :source_operation_id, :remaining_cents, :expires_on])
+    |> validate_number(:remaining_cents, greater_than_or_equal_to: 0)
+  end
+end

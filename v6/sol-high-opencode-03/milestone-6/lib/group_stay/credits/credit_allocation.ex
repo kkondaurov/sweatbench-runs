@@ -1,0 +1,37 @@
+defmodule GroupStay.Credits.CreditAllocation do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias GroupStay.Credits.CreditLot
+  alias GroupStay.Reservations.Group
+
+  schema "credit_allocations" do
+    field :amount_cents, :integer
+    field :room_id, :integer
+    field :funding_operation_id, :string
+    field :allocation_order, :integer
+
+    belongs_to :group, Group,
+      foreign_key: :group_id,
+      references: :group_id,
+      type: :string
+
+    belongs_to :credit_lot, CreditLot
+
+    timestamps(type: :utc_datetime)
+  end
+
+  def changeset(allocation, attrs) do
+    allocation
+    |> cast(attrs, [
+      :group_id,
+      :credit_lot_id,
+      :room_id,
+      :funding_operation_id,
+      :amount_cents,
+      :allocation_order
+    ])
+    |> validate_required([:group_id, :credit_lot_id, :amount_cents])
+    |> validate_number(:amount_cents, greater_than: 0)
+  end
+end

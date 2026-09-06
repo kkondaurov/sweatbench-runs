@@ -1,0 +1,67 @@
+defmodule GroupStay.Repo.Migrations.AddFinanceReporting do
+  use Ecto.Migration
+
+  def change do
+    create table(:finance_reporting_starts, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :operation_id, :string, null: false
+      add :starts_on, :date, null: false
+      add :opening_cash_by_property, :map, null: false
+      add :opening_credit_liability_cents, :integer, null: false, default: 0
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:finance_reporting_starts, [:operation_id])
+
+    create table(:finance_cash_movements) do
+      add :operation_id, :string, null: false
+      add :posting_date, :date, null: false
+      add :property_id, :string, null: false
+      add :received_cents, :integer, null: false, default: 0
+      add :transferred_in_cents, :integer, null: false, default: 0
+      add :transferred_out_cents, :integer, null: false, default: 0
+      add :refunded_cents, :integer, null: false, default: 0
+      add :retained_cents, :integer, null: false, default: 0
+      add :converted_to_credit_cents, :integer, null: false, default: 0
+      add :reduced_cents, :integer, null: false, default: 0
+      add :charged_back_cents, :integer, null: false, default: 0
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create index(:finance_cash_movements, [:posting_date, :property_id])
+    create index(:finance_cash_movements, [:operation_id])
+
+    create table(:finance_credit_movements) do
+      add :operation_id, :string, null: false
+      add :posting_date, :date, null: false
+      add :issued_cents, :integer, null: false, default: 0
+      add :expired_cents, :integer, null: false, default: 0
+      add :consumed_cents, :integer, null: false, default: 0
+      add :revoked_cents, :integer, null: false, default: 0
+      add :absorbed_cents, :integer, null: false, default: 0
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create index(:finance_credit_movements, [:posting_date])
+    create index(:finance_credit_movements, [:operation_id])
+
+    create table(:finance_credit_expiries, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+
+      add :hotel_credit_lot_id,
+          references(:hotel_credit_lots, type: :binary_id, on_delete: :restrict),
+          null: false
+
+      add :posting_date, :date, null: false
+      add :amount_cents, :integer, null: false, default: 0
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:finance_credit_expiries, [:hotel_credit_lot_id])
+    create index(:finance_credit_expiries, [:posting_date])
+  end
+end
