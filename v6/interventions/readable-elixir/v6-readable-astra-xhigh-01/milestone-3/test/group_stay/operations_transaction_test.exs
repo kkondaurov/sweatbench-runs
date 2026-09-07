@@ -1,0 +1,178 @@
+defmodule GroupStay.OperationsTransactionTest do
+  use GroupStay.CommittedCase, async: false
+
+  import Phoenix.ConnTest
+  import Plug.Conn
+  import GroupStay.PartnerFixtures
+
+  alias GroupStay.{Operations, Repo, Reservations}
+  alias GroupStay.Credits.{Allocation, Lot}
+  alias GroupStay.Finance.CashEntry
+  alias GroupStay.Operations.Record
+  alias GroupStay.Reservations.Group
+
+  @endpoint GroupStayWeb.Endpoint
+
+  for table <- ["cash_entries", "operation_records"] do
+    test "a fault writing #{table} rolls back only the current operation and aborts HTTP with 500" do
+      booking = open_group()
+      rejected = operation("cancel_group", %{"group_id" => "missing"})
+
+      payment =
+        operation("record_cash_payment", %{"operation_id" => "fail", "amount_cents" => 500})
+
+      later = open_group(%{"group_id" => "later"})
+      batch = [booking, rejected, payment, later]
+
+      # The cash entry is written after the group balance; the audit record is
+      # written after all domain effects. Either failure must undo every effect.
+      Repo.query!("""
+      CREATE TRIGGER fail_operation BEFORE INSERT ON #{unquote(table)}
+      WHEN NEW.operation_id = 'fail'
+      BEGIN SELECT RAISE(ABORT, 'injected storage fault'); END
+      """)
+
+      assert {500, _, _} = assert_error_sent(500, fn -> post_batch(batch) end)
+
+      assert %{revision: 1, cash_paid_cents: 0, deposit_paid_cents: 0} =
+               Repo.get!(Group, "group-81")
+
+      assert Repo.all(CashEntry) == []
+      assert Repo.aggregate(Record, :count) == 2
+      assert Operations.get_result(booking["operation_id"])["status"] == "applied"
+      assert Operations.get_result(rejected["operation_id"])["code"] == "group_not_found"
+      assert Operations.get_result("fail") == nil
+      assert Operations.get_result(later["operation_id"]) == nil
+      assert Repo.get(Group, "later") == nil
+
+      Repo.query!("DROP TRIGGER fail_operation")
+
+      assert %{"results" => [opened, rejected_result, paid, last]} =
+               batch |> post_batch() |> json_response(200)
+
+      assert opened["revision"] == 1
+      assert rejected_result["code"] == "group_not_found"
+      assert paid["revision"] == 2
+      assert last["status"] == "applied"
+      assert Repo.aggregate(Record, :count) == 4
+      assert [%CashEntry{amount_cents: 500}] = Repo.all(CashEntry)
+      assert Operations.apply_batch(batch) == [opened, rejected_result, paid, last]
+    end
+  end
+
+  test "failure to remember a credit cancellation rolls back its lot, cash, and group" do
+    Operations.apply_batch([
+      open_group(),
+      operation("record_cash_payment", %{"amount_cents" => 100})
+    ])
+
+    cancellation =
+      operation("cancel_group", %{"operation_id" => "fail", "refund_method" => "hotel_credit"})
+
+    before = snapshot()
+
+    Repo.query!("""
+    CREATE TRIGGER fail_operation BEFORE INSERT ON operation_records
+    WHEN NEW.operation_id = 'fail'
+    BEGIN SELECT RAISE(ABORT, 'injected audit fault'); END
+    """)
+
+    assert_error_sent(500, fn -> post_batch([cancellation]) end)
+    assert snapshot() == before
+    assert Operations.get_result("fail") == nil
+
+    Repo.query!("DROP TRIGGER fail_operation")
+
+    assert [%{"credit_issued_cents" => 110, "revision" => 3}] =
+             Operations.apply_batch([cancellation])
+
+    assert [%Lot{remaining_cents: 110}] = Repo.all(Lot)
+  end
+
+  test "replay and result lookup work without access to current group state" do
+    operations = [
+      open_group(),
+      operation("record_cash_payment", %{"amount_cents" => 100, "expected_revision" => 1}),
+      operation("cancel_group", %{"expected_revision" => 1})
+    ]
+
+    results = Operations.apply_batch(operations)
+    Repo.query!("ALTER TABLE groups RENAME TO unavailable_groups")
+
+    assert Operations.apply_batch(operations) == results
+    assert Enum.map(operations, &Operations.get_result(&1["operation_id"])) == results
+  end
+
+  test "records and their order survive replacing every database process", %{database: database} do
+    operations = [
+      open_group(),
+      operation("record_cash_payment", %{"amount_cents" => 100}),
+      operation("cancel_group", %{"expected_revision" => 1})
+    ]
+
+    results = Operations.apply_batch(operations)
+    before = snapshot()
+    greatest_id = Repo.aggregate(Record, :max, :id)
+
+    stop_supervised!(Repo)
+
+    repo =
+      start_supervised!({Repo, name: nil, database: database, pool: DBConnection.ConnectionPool})
+
+    Repo.put_dynamic_repo(repo)
+
+    assert Operations.apply_batch(operations) == results
+    assert Enum.map(operations, &Operations.get_result(&1["operation_id"])) == results
+    assert snapshot() == before
+
+    [result] =
+      Operations.apply_batch([operation("record_cash_payment", %{"amount_cents" => 200})])
+
+    assert result["revision"] == 3
+    record = Repo.get_by!(Record, operation_id: result["operation_id"])
+    assert record.id > greatest_id
+    assert Reservations.get_group("group-81").cash_paid_cents == 300
+  end
+
+  test "upgrading the cancellation release preserves existing credit and creates an empty audit" do
+    old_payment = operation("record_cash_payment", %{"amount_cents" => 100})
+
+    Operations.apply_batch([
+      open_group(),
+      old_payment,
+      operation("cancel_group", %{"refund_method" => "hotel_credit"}),
+      open_group(%{"group_id" => "next"}),
+      operation("apply_hotel_credit", %{"group_id" => "next", "amount_cents" => 50})
+    ])
+
+    # Return to the previous release's schema with populated groups, cash, lots,
+    # and allocations, then run the new release's migration normally.
+    assert [20_260_907_020_000] = Ecto.Migrator.run(Repo, :down, step: 1, log: false)
+    before = domain_snapshot()
+    assert [20_260_907_020_000] = Ecto.Migrator.run(Repo, :up, all: true, log: false)
+    assert domain_snapshot() == before
+    assert Repo.all(Record) == []
+    assert Operations.get_result(old_payment["operation_id"]) == nil
+
+    payment = Map.put(old_payment, "group_id", "next")
+    assert [%{"status" => "applied", "revision" => 3}] = Operations.apply_batch([payment])
+    assert Repo.aggregate(Record, :count) == 1
+    assert Ecto.Migrator.run(Repo, :up, all: true, log: false) == []
+  end
+
+  defp post_batch(operations) do
+    build_conn()
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/partner-batches", Jason.encode!(%{operations: operations}))
+  end
+
+  defp snapshot do
+    Map.put(domain_snapshot(), Record, Repo.all(Record))
+  end
+
+  defp domain_snapshot do
+    for schema <- [Group, CashEntry, Lot, Allocation],
+        into: %{},
+        do: {schema, Repo.all(schema)}
+  end
+end

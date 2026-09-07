@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "version": 6,
+  "collection": "readable-elixir",
+  "view": "interventions",
+  "campaign_id": "v6-readable-elixir-pilot-20260907-01",
+  "population": "Four completed Astra treatment runs; one sample per reasoning effort",
+  "baseline": {
+    "index": "../../index.json",
+    "index_sha256": "a75630be5cf83b398fbc27c4d7c71e6cc28b0f473df351dfb729ebd5c7c88548",
+    "runs": 98,
+    "snapshots": 686,
+    "included_here": false
+  },
+  "provenance": {
+    "campaign_manifest_sha256": "a6878facdf8a4c2bda98b9a1e289c47646b4bb24ba7d049f66817d2d4e293809",
+    "campaign_design_sha256": "7bce48460b2ebfab41df01b7dd311dc4dd52b81d256ebe1ccd58e5f0c2d5eb48",
+    "source_audit_sha256": "72325c87467b517e1f2efdb148ce35d9bf42c8d0ee1c40886ee052c299ce6f72"
+  },
+  "instruction": {
+    "file": "instruction.txt",
+    "bytes": 442,
+    "file_sha256": "55af546ecb51f2b4f9181aa09ca5a3d77a5158d2219c08862434767420f09d39",
+    "effective_prompt_suffix_sha256": "d88fccc5ae36a9fe3d85e8861395f4e23ff5e702ccce17c94d640cb71e8c1596",
+    "channel": "--prompt-suffix",
+    "milestones": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "documentation": [
+    {
+      "path": "README.md",
+      "sha256": "1005942973fb3ebdee034e3c116962f29c0eb7cc6c9501dca92340c42caadc13"
+    }
+  ],
+  "publication_validation": {
+    "runs": 4,
+    "snapshots": 28,
+    "checkpoint_hashes_matched": 28,
+    "report_hashes_matched": 28,
+    "integrity_audits_passed": 28,
+    "test_inventories_matched": 28,
+    "source_files": 1801,
+    "source_bytes": 5459604,
+    "source_symlinks": 0,
+    "post_evaluation_exclusions": 0
+  },
+  "snapshots": 28,
+  "files": 1801,
+  "bytes": 5459604,
+  "runs": [
+    {
+      "id": "v6-readable-astra-low-01",
+      "group": "readable-astra-low",
+      "sample": 1,
+      "display": "GPT-6 Astra low / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "0e52d5340ab005cadeb9020c62bd801e39b1c377a0fb476a54d737559f78dddb",
+      "readme_sha256": "01ecbc69ee3014c5fdd55ee626680aeb78064e8e354d9f1eeeeb7bfbaead3b1a"
+    },
+    {
+      "id": "v6-readable-astra-medium-01",
+      "group": "readable-astra-medium",
+      "sample": 1,
+      "display": "GPT-6 Astra medium / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "79c3ae025bba023060c875c47bd716fa6da8fb9ddd2fda537ef55100d4d257bf",
+      "readme_sha256": "e72596f5638a7ccff365c55b81da80a3fb6265597f1c6d632b1bf9d0c7206f5e"
+    },
+    {
+      "id": "v6-readable-astra-high-01",
+      "group": "readable-astra-high",
+      "sample": 1,
+      "display": "GPT-6 Astra high / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "0dcd8e58e0aae2dbf988a9484385e45fce46903a6fcff3e8b9294acec01c3f16",
+      "readme_sha256": "0d10f610f1117cfda7aa97e7f615a8821b65ca05d4b18276bd635aa98b27a075"
+    },
+    {
+      "id": "v6-readable-astra-xhigh-01",
+      "group": "readable-astra-xhigh",
+      "sample": 1,
+      "display": "GPT-6 Astra xhigh / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "xhigh",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "dcee25c11e99dec63dcccfac5074d8ccf41d4a15ed5c49f1af349c07fd8358c2",
+      "readme_sha256": "1329e966e8b3ee0ee24213cc5e448570b6528ad32046a746260eca245b8134cc"
+    }
+  ]
+}

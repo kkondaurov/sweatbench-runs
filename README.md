@@ -5,8 +5,11 @@ The applications produced by accepted [Sweat Bench](https://github.com/kkondauro
 ## Versions
 
 - [Version 6: 98 runs, 686 milestone snapshots](v6/README.md)
+- [Version 6 readable-Elixir intervention: 4 Astra runs, 28 snapshots](v6/interventions/readable-elixir/README.md)
 
-Run numbers match the [public dashboard](https://kkondaurov.github.io/sweatbench/). Only completed runs admitted to that dataset are included, regardless of score. Abandoned and invalid attempts are not included.
+The [Intervention dashboard](https://kkondaurov.github.io/sweatbench/#intervention) compares the four new Astra runs with the earlier runs and explains the differences found in their code.
+
+The original v6 collection's run numbers match the [public dashboard](https://kkondaurov.github.io/sweatbench/). Only completed runs admitted to that dataset are included there, regardless of score. Abandoned and invalid attempts are not included. The readable-Elixir intervention is a separate collection with one treatment sample per effort, each numbered Run 1; it does not change the original 98-run dataset.
 
 Each run has its own directory, a short index, and seven source snapshots. The snapshots retain the submitted implementation and candidate-written tests, including bugs. They have not been repaired or reformatted for publication.
 
@@ -20,7 +23,7 @@ With Node.js installed, run:
 node tools/verify.mjs
 ```
 
-The verifier checks every published source file against its SHA-256 checksum, checks the complete run and milestone inventory, and rejects missing or unexpected files. See [export details](v6/EXPORT.md) for provenance and exclusions.
+The verifier checks every published source file against its SHA-256 checksum, checks the complete run and milestone inventory, and rejects missing or unexpected files. It verifies the original 98 runs first, then calls the independent readable-Elixir intervention verifier. See [original export details](v6/EXPORT.md) and [intervention provenance](v6/interventions/readable-elixir/README.md#provenance-and-verification) for provenance and exclusions.
 
 ## License
 

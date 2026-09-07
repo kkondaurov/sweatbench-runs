@@ -25,7 +25,7 @@ assert.equal(new Set(index.runs.map(r => r.id)).size, 98);
 assert.equal(index.runs.filter(r => r.view === 'models').length, 73);
 assert.equal(index.runs.filter(r => r.view === 'harness').length, 25);
 const actualRuns = fs.readdirSync(version, {withFileTypes:true}).filter(d => d.isDirectory()).map(d => d.name).sort();
-assert.deepEqual(actualRuns, index.runs.map(r => r.id).sort());
+assert.deepEqual(actualRuns, [...index.runs.map(r => r.id), 'interventions'].sort());
 let fileCount = 0, bytes = 0, snapshots = 0;
 for (const expected of index.runs) {
   assert(safe(expected.id) && !expected.id.includes('/'));
@@ -65,3 +65,5 @@ assert.equal(snapshots, index.snapshots);
 assert.equal(fileCount, index.files);
 assert.equal(bytes, index.bytes);
 console.log(`Verified ${index.runs.length} runs, ${snapshots} snapshots, ${fileCount} source files (${bytes} bytes).`);
+const { verifyReadableElixir } = await import('./verify-readable-elixir.mjs');
+verifyReadableElixir(root);

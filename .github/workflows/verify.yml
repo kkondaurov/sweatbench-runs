@@ -16,3 +16,4 @@ jobs:
         with:
           node-version: '22'
       - run: node tools/verify.mjs
+      - run: node --test tools/verify-readable-elixir.test.mjs
