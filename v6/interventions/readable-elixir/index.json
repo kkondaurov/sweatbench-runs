@@ -1,10 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "version": 6,
   "collection": "readable-elixir",
   "view": "interventions",
   "campaign_id": "v6-readable-elixir-pilot-20260907-01",
-  "population": "Six completed Astra and Sol treatment runs; one sample per model and reasoning effort",
+  "population": "Eighteen completed Astra and Sol treatment runs; three samples per model and reasoning effort",
   "baseline": {
     "index": "../../index.json",
     "index_sha256": "a75630be5cf83b398fbc27c4d7c71e6cc28b0f473df351dfb729ebd5c7c88548",
@@ -36,24 +36,24 @@
   "documentation": [
     {
       "path": "README.md",
-      "sha256": "59af450169420fba39a4178f60e514650448f082671338752b555900fa2e31bc"
+      "sha256": "f88697d0ef565fd8533fd04554c392f9aa6df87db22316cf1cb86c2b081f97e7"
     }
   ],
   "publication_validation": {
-    "runs": 6,
-    "snapshots": 42,
-    "checkpoint_hashes_matched": 42,
-    "report_hashes_matched": 42,
-    "integrity_audits_passed": 42,
-    "test_inventories_matched": 42,
-    "source_files": 2672,
-    "source_bytes": 7930051,
+    "runs": 18,
+    "snapshots": 126,
+    "checkpoint_hashes_matched": 126,
+    "report_hashes_matched": 126,
+    "integrity_audits_passed": 126,
+    "test_inventories_matched": 126,
+    "source_files": 8054,
+    "source_bytes": 23792853,
     "source_symlinks": 0,
     "post_evaluation_exclusions": 0
   },
-  "snapshots": 42,
-  "files": 2672,
-  "bytes": 7930051,
+  "snapshots": 126,
+  "files": 8054,
+  "bytes": 23792853,
   "runs": [
     {
       "id": "v6-readable-astra-low-01",
@@ -156,7 +156,259 @@
       },
       "manifest_sha256": "78ab71149d9468ed4c04702e25a64610fc5e41473e818358aff1f668c40f7066",
       "readme_sha256": "fd3647b5698876e69bc05f5c5c6e43cac9207324a5fe2dfb1299144bbecf92b7"
+    },
+    {
+      "id": "v6-readable-astra-low-02",
+      "group": "readable-astra-low",
+      "sample": 2,
+      "display": "GPT-6 Astra low / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "harness": "codex",
+      "scores": {
+        "core": 38,
+        "maintenance": 9,
+        "scenarios": 92
+      },
+      "manifest_sha256": "a85a43c09b780ee826016cd1f8dcac87eb440820ea908b3d1d5c0b20d8e96c33",
+      "readme_sha256": "7606bf3ec39ef310d297f926832f7d253ef5d50edb7c184434f6829153003463"
+    },
+    {
+      "id": "v6-readable-astra-medium-02",
+      "group": "readable-astra-medium",
+      "sample": 2,
+      "display": "GPT-6 Astra medium / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "e0c62370bcc20402016ee2080849ac895a6dede5872fcc7a5a1e7cb023a715eb",
+      "readme_sha256": "1ccf5082ae89227546e9e6552fc3a337e24c8865931b0c0c86e5956d33d1be7f"
+    },
+    {
+      "id": "v6-readable-astra-high-02",
+      "group": "readable-astra-high",
+      "sample": 2,
+      "display": "GPT-6 Astra high / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "5dd1acdfde9f02158a9ad319f7695d08697990163f55e4ca9a5bc1e6fa7fc1c6",
+      "readme_sha256": "5e5930579562f801481fee2ab20ab7f5b735e7cc2651f72703ca3df7ebece58e"
+    },
+    {
+      "id": "v6-readable-astra-xhigh-02",
+      "group": "readable-astra-xhigh",
+      "sample": 2,
+      "display": "GPT-6 Astra xhigh / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "xhigh",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "4c22c07906fd8813d1bdead860d6ca696ed67fc9faa96085cd85cd1ff2af0469",
+      "readme_sha256": "2dd5c646c21266bf741843c557c6aeea2e88035f0c080a26765aad0cdacee166"
+    },
+    {
+      "id": "v6-readable-sol-medium-02",
+      "group": "readable-sol-medium",
+      "sample": 2,
+      "display": "GPT-5.6 Sol medium / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "harness": "codex",
+      "scores": {
+        "core": 37,
+        "maintenance": 7,
+        "scenarios": 90
+      },
+      "manifest_sha256": "b23604e25f8a496b66adfc314ffe64af853171686d508de28b00a83b3c495817",
+      "readme_sha256": "d3050db8d6b35190ccb41c78ba5032e31386d74127ac948fdd697940208d66ff"
+    },
+    {
+      "id": "v6-readable-sol-high-02",
+      "group": "readable-sol-high",
+      "sample": 2,
+      "display": "GPT-5.6 Sol high / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "harness": "codex",
+      "scores": {
+        "core": 37,
+        "maintenance": 10,
+        "scenarios": 92
+      },
+      "manifest_sha256": "4c002ae19eb8b6463836fcb5cb0fac7cde079cf2e05093565cac9a0f0cfd2508",
+      "readme_sha256": "7ecff4de278a22a2976853624409bd55247581d0f3f12bff9de67c044e1be435"
+    },
+    {
+      "id": "v6-readable-astra-low-03",
+      "group": "readable-astra-low",
+      "sample": 3,
+      "display": "GPT-6 Astra low / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "harness": "codex",
+      "scores": {
+        "core": 38,
+        "maintenance": 9,
+        "scenarios": 92
+      },
+      "manifest_sha256": "d05c79a72f413b741438a3e10f425c136c5c6776eae8f006d1b328a76be8a79b",
+      "readme_sha256": "11abe960f3f63300ac6fd03fe824c770eb559b95570e7f538d11802fb0cdb5d8"
+    },
+    {
+      "id": "v6-readable-astra-medium-03",
+      "group": "readable-astra-medium",
+      "sample": 3,
+      "display": "GPT-6 Astra medium / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "140a6cb310223408c3859c162c7e3e7bd1f25a64e1dc3262a71fb0c3f408cf81",
+      "readme_sha256": "935e8ec5a6b88864d680748cbae1a4f779154b8cfd9a41ad0a0ec982298a0459"
+    },
+    {
+      "id": "v6-readable-astra-high-03",
+      "group": "readable-astra-high",
+      "sample": 3,
+      "display": "GPT-6 Astra high / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "2a61f4fdf270b40cb127fbeb04a4ef577b5dd0c939c2f318bcac4bb209ca2d37",
+      "readme_sha256": "c4ce3c1b6f1dd88e33b342693f4b19e3e5be7e0087ed7331cf93b38ea309362e"
+    },
+    {
+      "id": "v6-readable-astra-xhigh-03",
+      "group": "readable-astra-xhigh",
+      "sample": 3,
+      "display": "GPT-6 Astra xhigh / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-6-astra",
+      "effort": "xhigh",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "f681e47bc49f54e74f58e26e8ee48246cdc8b3f9159fb21e1a4a2beb3d99a326",
+      "readme_sha256": "1eed106d7e1b56c5c90b178069cfbc683800a65188a0d1ca05b0383e18b57eff"
+    },
+    {
+      "id": "v6-readable-sol-medium-03",
+      "group": "readable-sol-medium",
+      "sample": 3,
+      "display": "GPT-5.6 Sol medium / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "harness": "codex",
+      "scores": {
+        "core": 39,
+        "maintenance": 10,
+        "scenarios": 94
+      },
+      "manifest_sha256": "6a8bb1fe7f143c8a29bca99227cef015cf8eb40ed351292ef472d72c54f143eb",
+      "readme_sha256": "0221685efb21f109d26c6f3ff21220002ab81d00899250704b668ac428008b3f"
+    },
+    {
+      "id": "v6-readable-sol-high-03",
+      "group": "readable-sol-high",
+      "sample": 3,
+      "display": "GPT-5.6 Sol high / Codex CLI / readable Elixir",
+      "view": "interventions",
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "harness": "codex",
+      "scores": {
+        "core": 38,
+        "maintenance": 10,
+        "scenarios": 92
+      },
+      "manifest_sha256": "ec110bf6584baa68aaaf6f9dc64bcc8692c15640350ff7a7a2e69f008985e278",
+      "readme_sha256": "3a8d7a03f1a49b9ee092d67e2b67b950a726da79893392ae4b506cdac30bc8fc"
     }
   ],
-  "sweeps": 5
+  "sweeps": 12,
+  "campaigns": [
+    {
+      "id": "v6-readable-elixir-pilot-20260907-01",
+      "samples": [
+        1
+      ],
+      "run_ids": [
+        "v6-readable-astra-low-01",
+        "v6-readable-astra-medium-01",
+        "v6-readable-astra-high-01",
+        "v6-readable-astra-xhigh-01",
+        "v6-readable-sol-medium-01",
+        "v6-readable-sol-high-01"
+      ],
+      "provenance": {
+        "campaign_manifest_sha256": "a6878facdf8a4c2bda98b9a1e289c47646b4bb24ba7d049f66817d2d4e293809",
+        "campaign_design_sha256": "7bce48460b2ebfab41df01b7dd311dc4dd52b81d256ebe1ccd58e5f0c2d5eb48",
+        "source_audit_sha256": "28ac3f1acc598ef62596f8787367937256ec6ae41a1c048736d126caeaf1941c"
+      }
+    },
+    {
+      "id": "v6-readable-elixir-repeats-20260907-01",
+      "samples": [
+        2,
+        3
+      ],
+      "run_ids": [
+        "v6-readable-astra-low-02",
+        "v6-readable-astra-medium-02",
+        "v6-readable-astra-high-02",
+        "v6-readable-astra-xhigh-02",
+        "v6-readable-sol-medium-02",
+        "v6-readable-sol-high-02",
+        "v6-readable-astra-low-03",
+        "v6-readable-astra-medium-03",
+        "v6-readable-astra-high-03",
+        "v6-readable-astra-xhigh-03",
+        "v6-readable-sol-medium-03",
+        "v6-readable-sol-high-03"
+      ],
+      "provenance": {
+        "campaign_manifest_sha256": "af24230fa2413c26ef2150ef84581f0defac7f35ef9821ad6226f9c3880e06c5",
+        "campaign_design_sha256": "f799ac18e11a0573ef1561b5a7511c625d6ccd0b5327e2ab1d009c8565f59d60",
+        "source_audit_sha256": "45388321435e60dd0de79d8f2ec891363906e76267af50b2b035890eff5318e2"
+      }
+    }
+  ],
+  "source_validation_sha256": "45388321435e60dd0de79d8f2ec891363906e76267af50b2b035890eff5318e2"
 }

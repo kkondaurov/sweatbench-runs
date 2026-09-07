@@ -15,7 +15,7 @@ const solHigh = 'v6-readable-sol-high-01';
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
 function fixture(t) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sol-archive-verifier-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'archive-repeat-verifier-test-'));
   t.after(() => fs.rmSync(root, {recursive:true,force:true}));
   fs.mkdirSync(path.join(root, 'v6'), {recursive:true});
   fs.copyFileSync(path.join(archive, 'v6/index.json'), path.join(root, 'v6/index.json'));
@@ -43,13 +43,13 @@ function reject(name, mutate, expected) {
   });
 }
 
-test('verifies six mixed-model interventions and five sweeps without changing baseline population', () => {
+test('verifies 18 mixed-model interventions and 12 sweeps without changing baseline population', () => {
   const result = verifyReadableElixir(archive, {quiet:true});
-  assert.equal(result.runs, 6);
-  assert.equal(result.sweeps, 5);
-  assert.equal(result.snapshots, 42);
-  assert.equal(result.files, 2672);
-  assert.equal(result.bytes, 7930051);
+  assert.equal(result.runs, 18);
+  assert.equal(result.sweeps, 12);
+  assert.equal(result.snapshots, 126);
+  assert.equal(result.files, 8054);
+  assert.equal(result.bytes, 23792853);
   assert.equal(JSON.parse(fs.readFileSync(path.join(archive, 'v6/index.json'))).runs.length, 98);
 });
 
@@ -84,7 +84,7 @@ test('accepts an internally consistent ship-time failure repaired before final s
     run.correctness.scenarios.checkpoint_invocations.passed--;
     run.correctness.prefix_depth = 0;
   }, solHigh);
-  assert.equal(verifyReadableElixir(root, {quiet:true}).runs, 6);
+  assert.equal(verifyReadableElixir(root, {quiet:true}).runs, 18);
 });
 
 test('accepts a recovered Core regression without conflating it with ship or final scores', t => {
@@ -94,7 +94,7 @@ test('accepts a recovered Core regression without conflating it with ship or fin
     run.correctness.prefix_depth = 1;
     run.correctness.regression_episodes = {count:1,episodes:[{family:'deposit-pricing',opened_at:2,recovered_at:3}]};
   }, solHigh);
-  assert.equal(verifyReadableElixir(root, {quiet:true}).runs, 6);
+  assert.equal(verifyReadableElixir(root, {quiet:true}).runs, 18);
 });
 
 reject('rejects model identity drift even with rebound index identity', root => {
@@ -162,6 +162,92 @@ reject('rejects a private machine path after rebinding file and manifest hashes'
     fs.writeFileSync(filename, bytes); file.bytes = bytes.length; file.sha256 = sha(bytes);
   }, solMedium);
 }, /Publication-safety hazard/);
+
+const lowRepeat = 'v6-readable-astra-low-02';
+test('retains failed historical upgrade checks even when the repeat final milestone passes', () => {
+  for (const suffix of ['02', '03']) {
+    const run = JSON.parse(fs.readFileSync(path.join(archive, collection, `v6-readable-astra-low-${suffix}`, 'run.json')));
+    assert.equal(run.sample, Number(suffix));
+    assert.deepEqual(run.scores, {core:38, maintenance:9, scenarios:92});
+    assert.equal(run.snapshots[3].correctness.status, 'failed');
+    assert.equal(run.snapshots[3].correctness.system_checks.filter(c => c.status === 'failed').length, 2);
+    assert.equal(run.snapshots[6].correctness.status, 'passed');
+    assert.equal(run.correctness.prefix_depth, 3);
+  }
+});
+
+test('retains all four Sol repeats including the non-sweeps', () => {
+  for (const [suffix, core, maintenance, scenarios] of [
+    ['medium-02',37,7,90], ['medium-03',39,10,94], ['high-02',37,10,92], ['high-03',38,10,92],
+  ]) {
+    const run = JSON.parse(fs.readFileSync(path.join(archive, collection, `v6-readable-sol-${suffix}`, 'run.json')));
+    assert.deepEqual(run.scores, {core,maintenance,scenarios});
+    assert.equal(run.snapshots.length, 7);
+  }
+});
+
+reject('rejects rebinding a repeat to the pilot campaign', root => {
+  mutateRun(root, (run, index) => {
+    run.provenance.campaign_id = index.campaign_id;
+    run.provenance.campaign_manifest_sha256 = index.provenance.campaign_manifest_sha256;
+  }, lowRepeat);
+}, /Run campaign/);
+
+reject('rejects a repeat campaign manifest mismatch', root => {
+  mutateRun(root, run => {run.provenance.campaign_manifest_sha256 = '0'.repeat(64);}, lowRepeat);
+}, /Run campaign manifest/);
+
+reject('rejects baseline-style repeat renumbering even when the index agrees', root => {
+  mutateRun(root, (run, index) => {run.sample = 4; index.runs.find(r => r.id === run.id).sample = 4;}, lowRepeat);
+}, /Exact intervention sample/);
+
+reject('rejects missing repeat runs', (_, dir) => {
+  const filename = path.join(dir, 'index.json');
+  const index = JSON.parse(fs.readFileSync(filename)); index.runs.pop();
+  fs.writeFileSync(filename, JSON.stringify(index));
+}, /Exact intervention run inventory/);
+
+reject('rejects repeat campaign membership drift', (_, dir) => {
+  const filename = path.join(dir, 'index.json');
+  const index = JSON.parse(fs.readFileSync(filename)); index.campaigns[1].run_ids.pop();
+  fs.writeFileSync(filename, JSON.stringify(index));
+}, /Campaign run membership/);
+
+reject('rejects repeat benchmark drift even with a valid hash shape', root => {
+  mutateRun(root, run => {run.provenance.benchmark_bundle_sha256 = '0'.repeat(64);}, lowRepeat);
+}, /Frozen benchmark, runner, and container/);
+
+reject('rejects removed scenario evidence from a perfect repeat', root => {
+  mutateRun(root, run => {for (const s of run.snapshots) delete s.correctness.scenario_tests;}, 'v6-readable-astra-high-03');
+}, /Repeat scenario evidence required/);
+
+reject('rejects historical failures relabeled as a repeat sweep', root => {
+  mutateRun(root, (run, index) => {
+    run.scores = {core:39,maintenance:10,scenarios:94};
+    index.runs.find(r => r.id === run.id).scores = run.scores;
+  }, lowRepeat);
+}, /Final score projection/);
+
+reject('rejects retained databases even after adding them to a repeat manifest', (root, dir) => {
+  mutateRun(root, run => {
+    const bytes = Buffer.from('not a real database');
+    const snapshot = run.snapshots[0];
+    fs.writeFileSync(path.join(dir, lowRepeat, snapshot.directory, 'data.db'), bytes);
+    snapshot.files.push({path:'data.db',bytes:bytes.length,sha256:sha(bytes)});
+    snapshot.files.sort((a,b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  }, lowRepeat);
+}, /Excluded filename/);
+
+reject('rejects a dependency path containing otherwise safe repeated bytes', (root, dir) => {
+  mutateRun(root, run => {
+    const bytes = fs.readFileSync(path.join(dir, lowRepeat, 'milestone-1/mix.exs'));
+    const directory = path.join(dir, lowRepeat, 'milestone-1/deps');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(path.join(directory, 'mix.exs'), bytes);
+    run.snapshots[0].files.push({path:'deps/mix.exs',bytes:bytes.length,sha256:sha(bytes)});
+    run.snapshots[0].files.sort((a,b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  }, lowRepeat);
+}, /Excluded directory/);
 
 reject('rejects changed source bytes', (_, dir) => {
   fs.appendFileSync(path.join(dir, id, 'milestone-1/mix.exs'), '\n');

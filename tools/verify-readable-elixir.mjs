@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url';
 
 const efforts = ['low', 'medium', 'high', 'xhigh'];
 const configurations = [...efforts.map(e => ['astra', e, 'gpt-6-astra']), ...['medium', 'high'].map(e => ['sol', e, 'gpt-5.6-sol'])];
+const samples = [1, 2, 3];
+const population = samples.flatMap(sample => configurations.map(([family, effort, model]) => ({
+  id:`v6-readable-${family}-${effort}-0${sample}`, family, effort, model, sample,
+  campaign:`v6-readable-elixir-${sample === 1 ? 'pilot' : 'repeats'}-20260907-01`,
+})));
 const milestones = [1,2,3,4,5,6,7];
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const safe = name => typeof name === 'string' && /^[a-zA-Z0-9_.\/-]+$/.test(name) && !name.split('/').some(p => !p || p === '.' || p === '..');
@@ -47,7 +52,7 @@ function walk(root, relative = '', result = {files: [], directories: []}) {
   return result;
 }
 
-function safety(rel, content) {
+export function safety(rel, content) {
   assert(safe(rel), `Unsafe source path: ${rel}`);
   assert(!rel.split('/').slice(0, -1).some(p => excludedDirs.has(p)), `Excluded directory: ${rel}`);
   assert(!sensitiveName.test(path.posix.basename(rel)), `Excluded filename: ${rel}`);
@@ -92,12 +97,21 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
   const indexBytes = regular(path.join(root, 'index.json'));
   safety('index.json', indexBytes);
   const index = JSON.parse(indexBytes);
-  assert.equal(index.schema_version, 1);
+  assert.equal(index.schema_version, 2);
   assert.equal(index.version, 6);
   assert.equal(index.collection, 'readable-elixir');
   assert.equal(index.view, 'interventions');
   assert.equal(index.campaign_id, 'v6-readable-elixir-pilot-20260907-01');
-  assert.deepEqual(index.runs.map(r => r.id), configurations.map(([family, effort]) => `v6-readable-${family}-${effort}-01`));
+  assert.deepEqual(index.runs.map(r => r.id), population.map(r => r.id), 'Exact intervention run inventory');
+  assert.deepEqual(index.campaigns.map(c => c.id), ['v6-readable-elixir-pilot-20260907-01', 'v6-readable-elixir-repeats-20260907-01'], 'Campaign inventory');
+  for (const campaign of index.campaigns) {
+    assert.deepEqual(campaign.samples, campaign.id === index.campaign_id ? [1] : [2, 3], 'Campaign samples');
+    assert.deepEqual(campaign.run_ids, population.filter(r => r.campaign === campaign.id).map(r => r.id), 'Campaign run membership');
+    assert.deepEqual(Object.keys(campaign.provenance).sort(), ['campaign_design_sha256','campaign_manifest_sha256','source_audit_sha256']);
+    for (const value of Object.values(campaign.provenance)) hash(value);
+  }
+  assert.deepEqual(index.campaigns[0].provenance, index.provenance, 'Pilot provenance preserved');
+  hash(index.source_validation_sha256);
   assert.equal(index.baseline.index, '../../index.json');
   const baselineBytes = regular(path.join(archiveRoot, 'v6/index.json'));
   assert.equal(sha(baselineBytes), index.baseline.index_sha256, 'Original baseline index changed');
@@ -125,6 +139,7 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
   assert.equal(sha(design), index.documentation[0].sha256, 'Design README checksum');
   let files = 0, bytes = 0, snapshots = 0, testFiles = 0, sweeps = 0;
   let familyDefinitions;
+  let frozenEnvironment;
   const seenContents = new Set();
   for (const [position, entry] of index.runs.entries()) {
     const runRoot = path.join(root, entry.id);
@@ -133,11 +148,11 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     safety('run.json', raw);
     const run = JSON.parse(raw);
     for (const k of ['id','group','sample','display','view','model','effort','harness','scores']) assert.deepEqual(run[k], entry[k], `${entry.id}: ${k}`);
-    const [modelFamily, effort, model] = configurations[position];
+    const {family:modelFamily, effort, model, sample, campaign:campaignId} = population[position];
     assert.equal(run.group, `readable-${modelFamily}-${effort}`);
     assert.equal(run.effort, effort);
     assert.equal(run.model, model);
-    assert.equal(run.sample, 1);
+    assert.equal(run.sample, sample, 'Exact intervention sample');
     assert.equal(run.view, 'interventions');
     assert.equal(run.harness, 'codex');
     assert.equal(run.protocol, 'handoff');
@@ -151,13 +166,18 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     assert(Number.isFinite(Date.parse(run.created_at)) && Date.parse(run.completed_at) > Date.parse(run.created_at));
     gitHash(run.benchmark_commit); gitHash(run.runner_commit); hash(run.runner_sha256);
     assert.equal(run.provenance.source_run_id, run.id);
-    assert.equal(run.provenance.campaign_id, index.campaign_id);
-    assert.equal(run.provenance.campaign_manifest_sha256, index.provenance.campaign_manifest_sha256);
+    const campaign = index.campaigns.find(c => c.id === campaignId);
+    assert.equal(run.provenance.campaign_id, campaign.id, 'Run campaign');
+    assert.equal(run.provenance.campaign_manifest_sha256, campaign.provenance.campaign_manifest_sha256, 'Run campaign manifest');
     assert.equal(run.provenance.instruction_file_sha256, index.instruction.file_sha256);
     assert.equal(run.provenance.effective_prompt_suffix_sha256, index.instruction.effective_prompt_suffix_sha256);
     for (const k of ['source_state_sha256','benchmark_manifest_sha256','benchmark_bundle_sha256']) hash(run.provenance[k]);
     assert.deepEqual(Object.keys(run.provenance.benchmark_entrypoint_sha256).sort(), ['bench.py', 'run_candidate.py']);
     for (const value of Object.values(run.provenance.benchmark_entrypoint_sha256)) hash(value);
+    const environment = {...Object.fromEntries(['benchmark_commit','runner_commit','runner_sha256','codex_version','container'].map(k => [k, run[k]])),
+      ...Object.fromEntries(['benchmark_manifest_sha256','benchmark_bundle_sha256','benchmark_entrypoint_sha256'].map(k => [k, run.provenance[k]]))};
+    frozenEnvironment ??= environment;
+    assert.deepEqual(environment, frozenEnvironment, 'Frozen benchmark, runner, and container');
     for (const phase of ['ship_time', 'final_state']) {
       score(run.correctness.tracks.core[phase], 39, `${run.id}: Core ${phase}`);
       score(run.correctness.tracks.maintenance[phase], 10, `${run.id}: Maintenance ${phase}`);
@@ -177,13 +197,14 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     const readme = regular(path.join(runRoot, 'README.md'));
     safety('README.md', readme);
     assert.equal(sha(readme), entry.readme_sha256, `${entry.id}: README checksum`);
-    assert(readme.toString().includes('Run 1'));
+    assert(readme.toString().includes(`Run ${sample}`), 'Run README sample');
     expectedFiles.push(`${run.id}/run.json`, `${run.id}/README.md`);
     assert.deepEqual(run.snapshots.map(s => s.milestone), milestones);
     const introduced = [];
     const systemOutcomes = new Map(), previousTests = new Set(), everPassed = new Set(), openEpisodes = new Map(), episodes = [];
     let prefix = 0, prefixIntact = true, shipPassed = 0, shipTotal = 0, previousTestCount = 0;
     const explicitScenarios = run.snapshots.some(s => s.correctness.scenario_tests !== undefined);
+    if (sample > 1) assert(explicitScenarios, 'Repeat scenario evidence required');
     for (const snapshot of run.snapshots) {
       const n = snapshot.milestone;
       assert.equal(snapshot.directory, `milestone-${n}`);

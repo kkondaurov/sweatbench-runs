@@ -1,0 +1,89 @@
+defmodule GroupStay.Reservations.Group do
+  @moduledoc """
+  A group reservation and the deposit accounting state owned by GroupStay.
+
+  Its monetary summary columns describe active rooms only. Original room prices
+  and deposit requirements remain on the room records after cancellation, while
+  payment history is conserved independently in cash-funding dispositions.
+  """
+
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias GroupStay.Reservations.{CashFunding, CreditAllocation, Room}
+
+  @primary_key {:group_id, :string, autogenerate: false}
+  schema "groups" do
+    field :guest_id, :string
+    field :property_id, :string
+    field :booked_on, :date
+    field :arrival_on, :date
+    field :departure_on, :date
+    field :rate_plan, :string
+    field :policy_version, :string
+    field :status, :string, default: "active"
+    field :revision, :integer, default: 1
+    field :lodging_total_cents, :integer
+    field :deposit_due_cents, :integer
+    field :deposit_paid_cents, :integer, default: 0
+    field :cash_paid_cents, :integer, default: 0
+    field :credit_paid_cents, :integer, default: 0
+    field :cash_refunded_cents, :integer, default: 0
+    field :cash_retained_cents, :integer, default: 0
+    field :cash_converted_to_credit_cents, :integer, default: 0
+
+    has_many :rooms, Room,
+      foreign_key: :group_id,
+      references: :group_id,
+      preload_order: [asc: :position]
+
+    has_many :credit_allocations, CreditAllocation,
+      foreign_key: :group_id,
+      references: :group_id
+
+    has_many :cash_fundings, CashFunding,
+      foreign_key: :group_id,
+      references: :group_id
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @creation_fields ~w(
+    group_id guest_id property_id booked_on arrival_on departure_on rate_plan
+    lodging_total_cents deposit_due_cents policy_version
+  )a
+
+  def creation_changeset(group, attributes) do
+    group
+    |> cast(attributes, @creation_fields)
+    |> validate_required(@creation_fields)
+    |> unique_constraint(:group_id)
+  end
+
+  @doc """
+  Changes a previously persisted group and advances its revision atomically.
+
+  `optimistic_lock/2` ensures two writers cannot both claim the same revision.
+  """
+  def operation_changeset(group, attributes) do
+    group
+    |> cast(attributes, [
+      :arrival_on,
+      :departure_on,
+      :status,
+      :lodging_total_cents,
+      :deposit_due_cents,
+      :deposit_paid_cents,
+      :cash_paid_cents,
+      :credit_paid_cents,
+      :cash_refunded_cents,
+      :cash_retained_cents,
+      :cash_converted_to_credit_cents
+    ])
+    # Some multi-group operations address a group even when all room funding
+    # they remove currently lives elsewhere. Force an update so that addressed
+    # group still advances exactly once under the revision contract.
+    |> force_change(:revision, group.revision)
+    |> optimistic_lock(:revision)
+  end
+end
