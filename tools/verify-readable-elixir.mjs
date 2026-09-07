@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
 const efforts = ['low', 'medium', 'high', 'xhigh'];
+const configurations = [...efforts.map(e => ['astra', e, 'gpt-6-astra']), ...['medium', 'high'].map(e => ['sol', e, 'gpt-5.6-sol'])];
 const milestones = [1,2,3,4,5,6,7];
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const safe = name => typeof name === 'string' && /^[a-zA-Z0-9_.\/-]+$/.test(name) && !name.split('/').some(p => !p || p === '.' || p === '..');
@@ -60,14 +61,26 @@ function safety(rel, content) {
   }
 }
 
-function allPassed(families, label) {
+function validateFamilies(families, label) {
   assert.equal(new Set(families.map(f => f.id)).size, families.length, `${label}: duplicate families`);
   for (const family of families) {
-    assert.equal(family.status, 'passed', label);
-    assert.deepEqual(family.failing_members, [], label);
+    assert.equal(typeof family.id, 'string', label);
+    assert(['passed', 'failed'].includes(family.status), label);
+    assert(Array.isArray(family.failing_members), label);
+    assert.equal(family.status === 'passed', family.failing_members.length === 0, `${label}: family failure evidence`);
+    assert.equal(new Set(family.failing_members).size, family.failing_members.length, label);
+    assert(family.failing_members.every(m => typeof m === 'string' && m.length > 0), label);
     assert(['core', 'judgment'].includes(family.track), label);
     assert(milestones.includes(family.stage), label);
   }
+}
+
+const tally = items => ({passed:items.filter(f => f.status === 'passed').length, total:items.length});
+const definitions = families => normalize(families.map(({id, stage, track}) => ({id, stage, track})));
+function score(value, total, label) {
+  assert.deepEqual(Object.keys(value).sort(), ['passed', 'total'], label);
+  assert.equal(value.total, total, `${label}: total`);
+  assert(Number.isInteger(value.passed) && value.passed >= 0 && value.passed <= total, `${label}: passed bounds`);
 }
 
 export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
@@ -84,7 +97,7 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
   assert.equal(index.collection, 'readable-elixir');
   assert.equal(index.view, 'interventions');
   assert.equal(index.campaign_id, 'v6-readable-elixir-pilot-20260907-01');
-  assert.deepEqual(index.runs.map(r => r.id), efforts.map(e => `v6-readable-astra-${e}-01`));
+  assert.deepEqual(index.runs.map(r => r.id), configurations.map(([family, effort]) => `v6-readable-${family}-${effort}-01`));
   assert.equal(index.baseline.index, '../../index.json');
   const baselineBytes = regular(path.join(archiveRoot, 'v6/index.json'));
   assert.equal(sha(baselineBytes), index.baseline.index_sha256, 'Original baseline index changed');
@@ -110,7 +123,8 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
   const design = regular(path.join(root, 'README.md'));
   safety('README.md', design);
   assert.equal(sha(design), index.documentation[0].sha256, 'Design README checksum');
-  let files = 0, bytes = 0, snapshots = 0, testFiles = 0;
+  let files = 0, bytes = 0, snapshots = 0, testFiles = 0, sweeps = 0;
+  let familyDefinitions;
   const seenContents = new Set();
   for (const [position, entry] of index.runs.entries()) {
     const runRoot = path.join(root, entry.id);
@@ -119,9 +133,10 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     safety('run.json', raw);
     const run = JSON.parse(raw);
     for (const k of ['id','group','sample','display','view','model','effort','harness','scores']) assert.deepEqual(run[k], entry[k], `${entry.id}: ${k}`);
-    assert.equal(run.group, `readable-astra-${efforts[position]}`);
-    assert.equal(run.effort, efforts[position]);
-    assert.equal(run.model, 'gpt-6-astra');
+    const [modelFamily, effort, model] = configurations[position];
+    assert.equal(run.group, `readable-${modelFamily}-${effort}`);
+    assert.equal(run.effort, effort);
+    assert.equal(run.model, model);
     assert.equal(run.sample, 1);
     assert.equal(run.view, 'interventions');
     assert.equal(run.harness, 'codex');
@@ -143,16 +158,22 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     for (const k of ['source_state_sha256','benchmark_manifest_sha256','benchmark_bundle_sha256']) hash(run.provenance[k]);
     assert.deepEqual(Object.keys(run.provenance.benchmark_entrypoint_sha256).sort(), ['bench.py', 'run_candidate.py']);
     for (const value of Object.values(run.provenance.benchmark_entrypoint_sha256)) hash(value);
-    assert.deepEqual(run.scores, {core:39, maintenance:10, scenarios:94});
     for (const phase of ['ship_time', 'final_state']) {
-      assert.deepEqual(run.correctness.tracks.core[phase], {passed:39,total:39});
-      assert.deepEqual(run.correctness.tracks.maintenance[phase], {passed:10,total:10});
-      assert.deepEqual(run.correctness.scenarios[phase], {passed:94,total:94});
+      score(run.correctness.tracks.core[phase], 39, `${run.id}: Core ${phase}`);
+      score(run.correctness.tracks.maintenance[phase], 10, `${run.id}: Maintenance ${phase}`);
+      score(run.correctness.scenarios[phase], 94, `${run.id}: scenarios ${phase}`);
     }
-    assert.equal(run.correctness.prefix_depth, 7);
-    assert.deepEqual(run.correctness.regression_episodes, {count:0,episodes:[]});
-    allPassed(run.correctness.final_families, run.id);
+    score(run.correctness.scenarios.checkpoint_invocations, 94, `${run.id}: checkpoint invocations`);
+    assert.deepEqual(run.scores, {core:run.correctness.tracks.core.final_state.passed,
+      maintenance:run.correctness.tracks.maintenance.final_state.passed, scenarios:run.correctness.scenarios.final_state.passed}, 'Final score projection');
+    if (run.scores.core === 39 && run.scores.maintenance === 10) sweeps++;
+    validateFamilies(run.correctness.final_families, run.id);
+    familyDefinitions ??= definitions(run.correctness.final_families);
+    assert.deepEqual(definitions(run.correctness.final_families), familyDefinitions, 'Frozen family definitions');
     for (const [track, count] of [['core',39],['judgment',10]]) assert.equal(run.correctness.final_families.filter(f => f.track === track).length, count);
+    for (const [track, publicTrack] of [['core','core'],['judgment','maintenance']]) {
+      assert.deepEqual(run.correctness.tracks[publicTrack].final_state, tally(run.correctness.final_families.filter(f => f.track === track)), 'Final family score');
+    }
     const readme = regular(path.join(runRoot, 'README.md'));
     safety('README.md', readme);
     assert.equal(sha(readme), entry.readme_sha256, `${entry.id}: README checksum`);
@@ -160,6 +181,9 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     expectedFiles.push(`${run.id}/run.json`, `${run.id}/README.md`);
     assert.deepEqual(run.snapshots.map(s => s.milestone), milestones);
     const introduced = [];
+    const systemOutcomes = new Map(), previousTests = new Set(), everPassed = new Set(), openEpisodes = new Map(), episodes = [];
+    let prefix = 0, prefixIntact = true, shipPassed = 0, shipTotal = 0, previousTestCount = 0;
+    const explicitScenarios = run.snapshots.some(s => s.correctness.scenario_tests !== undefined);
     for (const snapshot of run.snapshots) {
       const n = snapshot.milestone;
       assert.equal(snapshot.directory, `milestone-${n}`);
@@ -169,17 +193,63 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
       assert.equal(snapshot.checkpoint_verification.recomputed_sha256, snapshot.recorded_checkpoint_sha256);
       assert.deepEqual(snapshot.checkpoint_verification.excluded_post_evaluation_paths, []);
       assert.deepEqual(snapshot.evaluation_verification, {report_hash_matches_state:true,integrity_audit:{status:'passed',hits:[]},report_scores_match_state:true,report_families_match_state:true});
-      assert.equal(snapshot.correctness.status, 'passed');
-      assert.equal(snapshot.correctness.scenarios.passed, snapshot.correctness.scenarios.total);
+      const correctness = snapshot.correctness;
+      const caseCount = [12,22,29,50,61,73,83][n-1];
+      const checkCount = [0,2,1,2,2,2,2][n-1];
+      score(correctness.scenarios, caseCount + checkCount, `${run.id} M${n}: scenario summary`);
+      assert.equal(correctness.status, correctness.scenarios.passed === correctness.scenarios.total ? 'passed' : 'failed', 'Milestone status');
       const expectedFamilies = run.correctness.final_families.filter(f => f.stage === n);
-      assert.deepEqual(normalize(snapshot.correctness.introduced_families), normalize(expectedFamilies));
-      introduced.push(...snapshot.correctness.introduced_families);
-      assert.deepEqual(normalize(snapshot.correctness.cumulative_core_families), normalize(run.correctness.final_families.filter(f => f.stage <= n && f.track === 'core')));
+      validateFamilies(correctness.introduced_families, `${run.id} M${n}: introduced`);
+      validateFamilies(correctness.cumulative_core_families, `${run.id} M${n}: cumulative`);
+      assert.deepEqual(definitions(correctness.introduced_families), definitions(expectedFamilies), 'Introduced family inventory');
+      introduced.push(...correctness.introduced_families);
+      assert.deepEqual(definitions(correctness.cumulative_core_families), definitions(run.correctness.final_families.filter(f => f.stage <= n && f.track === 'core')), 'Cumulative family inventory');
+      assert.deepEqual(normalize(correctness.introduced_families.filter(f => f.track === 'core')), normalize(correctness.cumulative_core_families.filter(f => f.stage === n)), 'Introduced/cumulative Core outcomes');
+      if (n === 7) assert.deepEqual(normalize(correctness.cumulative_core_families), normalize(run.correctness.final_families.filter(f => f.track === 'core')), 'Final cumulative outcomes');
+      if (n === 7) assert.deepEqual(normalize(correctness.introduced_families), normalize(expectedFamilies), 'Final introduced outcomes');
       for (const track of ['core','judgment']) {
-        const total = expectedFamilies.filter(f => f.track === track).length;
-        assert.deepEqual(snapshot.correctness.family_tracks[track], {passed:total,total});
+        assert.deepEqual(correctness.family_tracks[track], tally(correctness.introduced_families.filter(f => f.track === track)), 'Introduced family score');
       }
-      assert(snapshot.correctness.system_checks.every(c => c.status === 'passed'));
+      assert.equal(correctness.system_checks.length, checkCount);
+      for (const check of correctness.system_checks) {
+        assert(typeof check.name === 'string' && check.name.length > 0 && !systemOutcomes.has(check.name), 'System-check identity');
+        assert(['passed','failed'].includes(check.status), 'System-check status');
+        systemOutcomes.set(check.name, check.status);
+        shipPassed += Number(check.status === 'passed'); shipTotal++;
+      }
+      if (explicitScenarios) {
+        const tests = correctness.scenario_tests;
+        assert(Array.isArray(tests) && tests.length === caseCount, 'Scenario-test inventory');
+        const currentTests = new Map(tests.map(t => [t.id, t.status]));
+        assert.equal(currentTests.size, tests.length, 'Duplicate scenario ID');
+        assert(tests.every(t => typeof t.id === 'string' && t.id.length > 0 && ['passed','failed'].includes(t.status)), 'Scenario status');
+        assert([...previousTests].every(id => currentTests.has(id)), 'Cumulative scenario inventory');
+        assert.deepEqual(correctness.scenarios, tally([...tests, ...correctness.system_checks]), 'Scenario evidence summary');
+        for (const t of tests) {
+          if (!previousTests.has(t.id)) {shipTotal++; shipPassed += Number(t.status === 'passed');}
+          previousTests.add(t.id);
+        }
+        for (const f of [...correctness.introduced_families, ...correctness.cumulative_core_families, ...(n === 7 ? run.correctness.final_families : [])]) {
+          for (const member of f.failing_members) assert.equal(member.startsWith('system:') ? systemOutcomes.get(member.slice(7)) : currentTests.get(member), 'failed', 'Family failure/scenario evidence');
+        }
+      } else {
+        // Legacy manifests omit individual cases; only lossless all-pass inference is possible.
+        assert.equal(correctness.scenarios.passed, correctness.scenarios.total, 'Non-perfect scenarios require case evidence');
+        assert([...correctness.introduced_families, ...correctness.cumulative_core_families].every(f => f.status === 'passed'), 'Legacy family/scenario evidence');
+        shipTotal += caseCount - previousTestCount; shipPassed += caseCount - previousTestCount;
+      }
+      previousTestCount = caseCount;
+      prefixIntact &&= correctness.cumulative_core_families.every(f => f.status === 'passed');
+      if (prefixIntact) prefix = n;
+      for (const f of correctness.cumulative_core_families) {
+        if (f.status === 'passed') {
+          everPassed.add(f.id);
+          if (openEpisodes.has(f.id)) {openEpisodes.get(f.id).recovered_at = n; openEpisodes.delete(f.id);}
+        } else if (everPassed.has(f.id) && !openEpisodes.has(f.id)) {
+          const episode = {family:f.id, opened_at:n, recovered_at:null};
+          episodes.push(episode); openEpisodes.set(f.id, episode);
+        }
+      }
       assert.deepEqual(snapshot.files.map(f => f.path), snapshot.files.map(f => f.path).sort(), 'Source file order');
       const seen = new Map();
       const tree = crypto.createHash('sha256');
@@ -214,7 +284,16 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
       testFiles += inventory.file_count;
       bytes += snapshotBytes; snapshots++;
     }
-    assert.deepEqual(normalize(introduced), normalize(run.correctness.final_families));
+    for (const [track, publicTrack] of [['core','core'],['judgment','maintenance']]) {
+      assert.deepEqual(run.correctness.tracks[publicTrack].ship_time, tally(introduced.filter(f => f.track === track)), 'Ship-time family score');
+    }
+    assert.deepEqual(run.correctness.scenarios.ship_time, {passed:shipPassed,total:shipTotal}, 'Ship-time scenario score');
+    assert.deepEqual(run.correctness.scenarios.checkpoint_invocations, {passed:shipPassed,total:shipTotal}, 'Checkpoint scenario score');
+    const last = run.snapshots.at(-1).correctness;
+    const finalPassed = last.scenarios.passed - tally(last.system_checks).passed + [...systemOutcomes.values()].filter(s => s === 'passed').length;
+    assert.deepEqual(run.correctness.scenarios.final_state, {passed:finalPassed,total:83 + systemOutcomes.size}, 'Final scenario score');
+    assert.equal(run.correctness.prefix_depth, prefix, 'Core prefix depth');
+    assert.deepEqual(run.correctness.regression_episodes, {count:episodes.length,episodes}, 'Regression episodes');
   }
   assert.deepEqual(actual.files.sort(), expectedFiles.sort(), 'Intervention file inventory: missing or unexpected files');
   const expectedDirs = new Set();
@@ -223,13 +302,15 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
     for (let n = 1; n < parts.length; n++) expectedDirs.add(parts.slice(0, n).join('/'));
   }
   assert.deepEqual(actual.directories.sort(), [...expectedDirs].sort(), 'Intervention directory inventory');
-  assert.equal(snapshots, index.snapshots); assert.equal(snapshots, 28);
-  assert.equal(files, index.files); assert.equal(files, 1801);
-  assert.equal(bytes, index.bytes); assert.equal(bytes, 5459604);
-  assert.deepEqual(index.publication_validation, {runs:4,snapshots:28,checkpoint_hashes_matched:28,report_hashes_matched:28,
-    integrity_audits_passed:28,test_inventories_matched:28,source_files:files,source_bytes:bytes,source_symlinks:0,post_evaluation_exclusions:0});
-  const summary = {runs:4,snapshots,files,bytes,unique_source_contents:seenContents.size,candidate_test_files:testFiles};
-  if (!quiet) console.log(`Verified readable-Elixir intervention: 4 runs, ${snapshots} snapshots, ${files} source files (${bytes} bytes); baseline inventory remains 98 runs.`);
+  const runs = index.runs.length;
+  assert.equal(snapshots, index.snapshots); assert.equal(snapshots, runs * milestones.length);
+  assert.equal(files, index.files);
+  assert.equal(bytes, index.bytes);
+  assert.equal(sweeps, index.sweeps, 'Sweep count');
+  assert.deepEqual(index.publication_validation, {runs,snapshots,checkpoint_hashes_matched:snapshots,report_hashes_matched:snapshots,
+    integrity_audits_passed:snapshots,test_inventories_matched:snapshots,source_files:files,source_bytes:bytes,source_symlinks:0,post_evaluation_exclusions:0});
+  const summary = {runs,sweeps,snapshots,files,bytes,unique_source_contents:seenContents.size,candidate_test_files:testFiles};
+  if (!quiet) console.log(`Verified readable-Elixir intervention: ${runs} runs, ${sweeps} sweeps, ${snapshots} snapshots, ${files} source files (${bytes} bytes); baseline inventory remains 98 runs.`);
   return summary;
 }
 

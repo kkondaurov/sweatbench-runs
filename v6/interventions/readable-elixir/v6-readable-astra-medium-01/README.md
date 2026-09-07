@@ -1,6 +1,6 @@
 # GPT-6 Astra medium: Readable Elixir - Run 1
 
-[Intervention design and all four runs](../README.md) | [Exact instruction](../instruction.txt)
+[Intervention design and all runs](../README.md) | [Exact instruction](../instruction.txt)
 
 Treatment run ID: `v6-readable-astra-medium-01`. Sample **1** within this intervention configuration, not a baseline run number. Final scores: **39 out of 39 Core**, **10 out of 10 Maintenance**, and **94 out of 94 scenarios**.
 
