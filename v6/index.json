@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "version": 6,
-  "dataset_url": "https://github.com/kkondaurov/sweatbench/blob/9077a7a2edb3f0cd9d53c34697dca2922871237f/evaluation/results/v6/accepted-runs.json",
-  "dataset_sha256": "1deb5f27754f8de1adc7c8f1f02554fcc2bb40bdc222611d3f0e3562a6042e78",
-  "snapshots": 686,
-  "files": 41445,
-  "bytes": 141851187,
+  "dataset_url": "https://github.com/kkondaurov/sweatbench/blob/7275d9bd89386f3b9624c603ed17df3bfea47add/evaluation/results/v6/accepted-runs.json",
+  "dataset_sha256": "53b004fec23fec8b6483b9370493d8450388938709db5f3e09d8a7163c0b9e6c",
+  "snapshots": 693,
+  "files": 41923,
+  "bytes": 143683431,
   "runs": [
     {
       "id": "sol-high-01",
@@ -1084,12 +1084,23 @@
       "effort": "xhigh",
       "harness": "codex",
       "manifest_sha256": "b7f4cf19413dfe82ce770416c7661639d256b9b5ab85ec5eedfa8f5aa30a7bde"
+    },
+    {
+      "id": "grok-4-7-xhigh-01",
+      "group": "grok-4-7-xhigh",
+      "sample": 1,
+      "display": "Grok 4.7 xhigh / OpenCode",
+      "view": "models",
+      "model": "openrouter/x-ai/grok-4.7",
+      "effort": "xhigh",
+      "harness": "opencode",
+      "manifest_sha256": "5e01cdd82e5221e7258cc1d828cd58bf50814a41873e1477dcc5c57cb7205e1e"
     }
   ],
   "publication_validation": {
-    "run_mapping": "98 of 98 matched accepted records",
-    "source_files": "41445 of 41445 matched independent source hashes",
-    "snapshots_with_verified_recorded_hash": 91,
+    "run_mapping": "99 of 99 matched accepted records",
+    "source_files": "41923 of 41923 matched source hashes",
+    "snapshots_with_verified_recorded_hash": 98,
     "snapshots_without_recorded_hash": 595
   }
 }

@@ -1,6 +1,6 @@
 # Sweat Bench v6 run sources
 
-**98 accepted runs, 686 milestone snapshots.** This archive contains every unique run represented in the [v6 dashboard](https://kkondaurov.github.io/sweatbench/): 73 Model runs and 25 additional Harnesses runs. The Harnesses view also reuses 20 of the Model runs; those are stored once.
+**99 accepted runs, 693 milestone snapshots.** This archive contains every unique run represented in the [v6 dashboard](https://kkondaurov.github.io/sweatbench/): 74 Model runs and 25 additional Harnesses runs. The Harnesses view also reuses 20 of the Model runs; those are stored once.
 
 Run numbers and IDs match the published dataset, including the renumbering of accepted experiment samples. Completed low-scoring runs are included. Abandoned, invalid and discarded attempts are not included.
 
@@ -35,6 +35,7 @@ Each run contains all seven application snapshots. [Export details](EXPORT.md) d
 | GPT-5.5 xhigh / Codex CLI | 5 | [gpt-5-5-xhigh-05](gpt-5-5-xhigh-05/README.md) | [Final code](gpt-5-5-xhigh-05/milestone-7/) |
 | Claude Opus 5 high / Claude Code | 1 | [claude-opus5-high-01](claude-opus5-high-01/README.md) | [Final code](claude-opus5-high-01/milestone-7/) |
 | Claude Opus 5 high / Claude Code | 2 | [claude-opus5-high-02](claude-opus5-high-02/README.md) | [Final code](claude-opus5-high-02/milestone-7/) |
+| Grok 4.7 xhigh / OpenCode | 1 | [grok-4-7-xhigh-01](grok-4-7-xhigh-01/README.md) | [Final code](grok-4-7-xhigh-01/milestone-7/) |
 | Grok 4.6 xhigh / OpenCode | 1 | [grok-4-6-xhigh-01](grok-4-6-xhigh-01/README.md) | [Final code](grok-4-6-xhigh-01/milestone-7/) |
 | Grok 4.6 xhigh / OpenCode | 2 | [grok-4-6-xhigh-02](grok-4-6-xhigh-02/README.md) | [Final code](grok-4-6-xhigh-02/milestone-7/) |
 | Grok 4.6 xhigh / OpenCode | 3 | [grok-4-6-xhigh-03](grok-4-6-xhigh-03/README.md) | [Final code](grok-4-6-xhigh-03/milestone-7/) |

@@ -112,8 +112,8 @@ export function verifyReadableElixir(archiveRoot, {quiet = false} = {}) {
   }
   assert.deepEqual(index.campaigns[0].provenance, index.provenance, 'Pilot provenance preserved');
   hash(index.source_validation_sha256);
-  assert.equal(index.baseline.index, '../../index.json');
-  const baselineBytes = regular(path.join(archiveRoot, 'v6/index.json'));
+  assert.equal(index.baseline.index, '../../index-20260906.json');
+  const baselineBytes = regular(path.join(archiveRoot, 'v6/index-20260906.json'));
   assert.equal(sha(baselineBytes), index.baseline.index_sha256, 'Original baseline index changed');
   const baseline = JSON.parse(baselineBytes);
   assert.equal(baseline.runs.length, 98);

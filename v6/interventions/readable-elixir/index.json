@@ -6,7 +6,7 @@
   "campaign_id": "v6-readable-elixir-pilot-20260907-01",
   "population": "Eighteen completed Astra and Sol treatment runs; three samples per model and reasoning effort",
   "baseline": {
-    "index": "../../index.json",
+    "index": "../../index-20260906.json",
     "index_sha256": "a75630be5cf83b398fbc27c4d7c71e6cc28b0f473df351dfb729ebd5c7c88548",
     "runs": 98,
     "snapshots": 686,

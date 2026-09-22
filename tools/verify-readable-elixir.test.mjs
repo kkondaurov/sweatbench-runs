@@ -18,7 +18,7 @@ function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'archive-repeat-verifier-test-'));
   t.after(() => fs.rmSync(root, {recursive:true,force:true}));
   fs.mkdirSync(path.join(root, 'v6'), {recursive:true});
-  fs.copyFileSync(path.join(archive, 'v6/index.json'), path.join(root, 'v6/index.json'));
+  fs.copyFileSync(path.join(archive, 'v6/index-20260906.json'), path.join(root, 'v6/index-20260906.json'));
   fs.cpSync(path.join(archive, collection), path.join(root, collection), {recursive:true});
   return root;
 }
@@ -50,7 +50,7 @@ test('verifies 18 mixed-model interventions and 12 sweeps without changing basel
   assert.equal(result.snapshots, 126);
   assert.equal(result.files, 8054);
   assert.equal(result.bytes, 23792853);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(archive, 'v6/index.json'))).runs.length, 98);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(archive, 'v6/index-20260906.json'))).runs.length, 98);
 });
 
 test('retains the completed, non-perfect Sol medium trajectory and public Run 1', () => {
@@ -305,7 +305,7 @@ reject('rejects changed design documentation', (_, dir) => {
   fs.appendFileSync(path.join(dir, 'README.md'), '\n');
 }, /README checksum/);
 reject('rejects an altered original baseline index', root => {
-  fs.appendFileSync(path.join(root, 'v6/index.json'), '\n');
+  fs.appendFileSync(path.join(root, 'v6/index-20260906.json'), '\n');
 }, /baseline index changed/);
 reject('rejects a provider-token pattern even with rebound file and manifest hashes', (root, dir) => {
   mutateRun(root, run => {
