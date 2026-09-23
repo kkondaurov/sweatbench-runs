@@ -1,6 +1,6 @@
 # Sweat Bench v6 run sources
 
-**99 accepted runs, 693 milestone snapshots.** This archive contains every unique run represented in the [v6 dashboard](https://kkondaurov.github.io/sweatbench/): 74 Model runs and 25 additional Harnesses runs. The Harnesses view also reuses 20 of the Model runs; those are stored once.
+**102 accepted runs, 714 milestone snapshots.** This archive contains every unique run represented in the [v6 dashboard](https://kkondaurov.github.io/sweatbench/): 77 Model runs and 25 additional Harnesses runs. The Harnesses view also reuses 20 of the Model runs; those are stored once.
 
 Run numbers and IDs match the published dataset, including the renumbering of accepted experiment samples. Completed low-scoring runs are included. Abandoned, invalid and discarded attempts are not included.
 
@@ -23,6 +23,9 @@ Each run contains all seven application snapshots. [Export details](EXPORT.md) d
 | GPT-5.6 Terra xhigh / Codex CLI | 3 | [terra-xhigh-03](terra-xhigh-03/README.md) | [Final code](terra-xhigh-03/milestone-7/) |
 | GPT-5.6 Terra xhigh / Codex CLI | 4 | [terra-xhigh-04](terra-xhigh-04/README.md) | [Final code](terra-xhigh-04/milestone-7/) |
 | GPT-5.6 Terra xhigh / Codex CLI | 5 | [terra-xhigh-05](terra-xhigh-05/README.md) | [Final code](terra-xhigh-05/milestone-7/) |
+| GPT-6 Luna xhigh / Codex CLI | 1 | [luna6-xhigh-01](luna6-xhigh-01/README.md) | [Final code](luna6-xhigh-01/milestone-7/) |
+| GPT-6 Luna xhigh / Codex CLI | 2 | [luna6-xhigh-02](luna6-xhigh-02/README.md) | [Final code](luna6-xhigh-02/milestone-7/) |
+| GPT-6 Luna xhigh / Codex CLI | 3 | [luna6-xhigh-03](luna6-xhigh-03/README.md) | [Final code](luna6-xhigh-03/milestone-7/) |
 | GPT-5.6 Luna xhigh / Codex CLI | 1 | [luna-xhigh-01](luna-xhigh-01/README.md) | [Final code](luna-xhigh-01/milestone-7/) |
 | GPT-5.6 Luna xhigh / Codex CLI | 2 | [luna-xhigh-02](luna-xhigh-02/README.md) | [Final code](luna-xhigh-02/milestone-7/) |
 | GPT-5.6 Luna xhigh / Codex CLI | 3 | [luna-xhigh-03](luna-xhigh-03/README.md) | [Final code](luna-xhigh-03/milestone-7/) |

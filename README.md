@@ -4,7 +4,7 @@ The applications produced by accepted [Sweat Bench](https://github.com/kkondauro
 
 ## Versions
 
-- [Version 6: 99 runs, 693 milestone snapshots](v6/README.md)
+- [Version 6: 102 runs, 714 milestone snapshots](v6/README.md)
 - [Version 6 readable-Elixir intervention: 18 Astra and Sol runs, 126 snapshots](v6/interventions/readable-elixir/README.md)
 
 The [Intervention dashboard](https://kkondaurov.github.io/sweatbench/#intervention) compares readable-Elixir treatment runs with historical baselines and examines their code. This source collection contains 12 Core-and-Maintenance sweeps across 18 completed trajectories. All completed runs are retained, including non-perfect results.
@@ -23,7 +23,7 @@ With Node.js installed, run:
 node tools/verify.mjs
 ```
 
-The verifier checks every published source file against its SHA-256 checksum, checks the complete run and milestone inventory, and rejects missing or unexpected files. It verifies the 99 baseline runs first, then calls the independent readable-Elixir intervention verifier. See [original export details](v6/EXPORT.md) and [intervention provenance](v6/interventions/readable-elixir/README.md#provenance-and-verification) for provenance and exclusions.
+The verifier checks every published source file against its SHA-256 checksum, checks the complete run and milestone inventory, and rejects missing or unexpected files. It verifies the 102 baseline runs first, then calls the independent readable-Elixir intervention verifier. See [original export details](v6/EXPORT.md) and [intervention provenance](v6/interventions/readable-elixir/README.md#provenance-and-verification) for provenance and exclusions.
 
 ## License
 

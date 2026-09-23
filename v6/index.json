@@ -2,10 +2,10 @@
   "schema_version": 1,
   "version": 6,
   "dataset_url": "https://github.com/kkondaurov/sweatbench/blob/7275d9bd89386f3b9624c603ed17df3bfea47add/evaluation/results/v6/accepted-runs.json",
-  "dataset_sha256": "53b004fec23fec8b6483b9370493d8450388938709db5f3e09d8a7163c0b9e6c",
-  "snapshots": 693,
-  "files": 41923,
-  "bytes": 143683431,
+  "dataset_sha256": "4dbd6e9422d604e40c1f129d651e4cf9ccddc8601b6c6a4478e24aadd91ac3bc",
+  "snapshots": 714,
+  "files": 43121,
+  "bytes": 147439485,
   "runs": [
     {
       "id": "sol-high-01",
@@ -1095,12 +1095,45 @@
       "effort": "xhigh",
       "harness": "opencode",
       "manifest_sha256": "5e01cdd82e5221e7258cc1d828cd58bf50814a41873e1477dcc5c57cb7205e1e"
+    },
+    {
+      "id": "luna6-xhigh-01",
+      "group": "luna6-xhigh",
+      "sample": 1,
+      "display": "GPT-6 Luna xhigh / Codex CLI",
+      "view": "models",
+      "model": "gpt-6-luna",
+      "effort": "xhigh",
+      "harness": "codex",
+      "manifest_sha256": "e0f750f99c5137f51659c69799eed1315efdbfe6d2d2d8bca5d00f2a75de5a37"
+    },
+    {
+      "id": "luna6-xhigh-02",
+      "group": "luna6-xhigh",
+      "sample": 2,
+      "display": "GPT-6 Luna xhigh / Codex CLI",
+      "view": "models",
+      "model": "gpt-6-luna",
+      "effort": "xhigh",
+      "harness": "codex",
+      "manifest_sha256": "1e557ecce6aac215cd464d83b91e1b60f4484b578af4242f4ee6528808ce4dd8"
+    },
+    {
+      "id": "luna6-xhigh-03",
+      "group": "luna6-xhigh",
+      "sample": 3,
+      "display": "GPT-6 Luna xhigh / Codex CLI",
+      "view": "models",
+      "model": "gpt-6-luna",
+      "effort": "xhigh",
+      "harness": "codex",
+      "manifest_sha256": "f9dcecbc47a5e7930138abb3a2c9f4f74c73e6358fecbf4c829cd15bfe257141"
     }
   ],
   "publication_validation": {
-    "run_mapping": "99 of 99 matched accepted records",
-    "source_files": "41923 of 41923 matched source hashes",
-    "snapshots_with_verified_recorded_hash": 98,
+    "run_mapping": "102 of 102 matched accepted records",
+    "source_files": "43121 of 43121 matched source hashes",
+    "snapshots_with_verified_recorded_hash": 119,
     "snapshots_without_recorded_hash": 595
   }
 }

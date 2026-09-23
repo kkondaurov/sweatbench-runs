@@ -1,0 +1,14 @@
+defmodule GroupStay.HotelCreditLot do
+  use Ecto.Schema
+
+  schema "hotel_credit_lots" do
+    field :guest_id, :string
+    field :source_operation_id, :string
+    field :remaining_cents, :integer
+    field :issued_on, :date
+    field :expires_on, :date
+    field :unrecovered_clawback_cents, :integer, default: 0
+
+    timestamps(type: :utc_datetime)
+  end
+end
