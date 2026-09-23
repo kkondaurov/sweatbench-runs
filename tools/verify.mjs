@@ -20,9 +20,9 @@ function walk(directory, relative = '') {
   return result.sort();
 }
 assert.equal(index.version, 6);
-assert.equal(index.runs.length, 102);
-assert.equal(new Set(index.runs.map(r => r.id)).size, 102);
-assert.equal(index.runs.filter(r => r.view === 'models').length, 77);
+assert.equal(index.runs.length, 103);
+assert.equal(new Set(index.runs.map(r => r.id)).size, 103);
+assert.equal(index.runs.filter(r => r.view === 'models').length, 78);
 assert.equal(index.runs.filter(r => r.view === 'harness').length, 25);
 const actualRuns = fs.readdirSync(version, {withFileTypes:true}).filter(d => d.isDirectory()).map(d => d.name).sort();
 assert.deepEqual(actualRuns, [...index.runs.map(r => r.id), 'interventions'].sort());

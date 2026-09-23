@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "version": 6,
-  "dataset_url": "https://github.com/kkondaurov/sweatbench/blob/7275d9bd89386f3b9624c603ed17df3bfea47add/evaluation/results/v6/accepted-runs.json",
-  "dataset_sha256": "4dbd6e9422d604e40c1f129d651e4cf9ccddc8601b6c6a4478e24aadd91ac3bc",
-  "snapshots": 714,
-  "files": 43121,
-  "bytes": 147439485,
+  "dataset_url": "https://github.com/kkondaurov/sweatbench/blob/f2a10a9568dc7b9d96aeb395c6740325c2a2e12d/evaluation/results/v6/accepted-runs.json",
+  "dataset_sha256": "0f0966e5706899a1a8957168e1f12283055673dfc2ebac479bed32fbf2aeab5e",
+  "snapshots": 721,
+  "files": 43647,
+  "bytes": 149273143,
   "runs": [
     {
       "id": "sol-high-01",
@@ -1128,12 +1128,23 @@
       "effort": "xhigh",
       "harness": "codex",
       "manifest_sha256": "f9dcecbc47a5e7930138abb3a2c9f4f74c73e6358fecbf4c829cd15bfe257141"
+    },
+    {
+      "id": "claude-opus55-high-01",
+      "group": "claude-opus55-high",
+      "sample": 1,
+      "display": "Claude Opus 5.5 high / Claude Code",
+      "view": "models",
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "harness": "claude",
+      "manifest_sha256": "e85c6d3027fac3fcff904635dca2bba3d7cc0d8d74fed2d7de5fb8b9ee4bd515"
     }
   ],
   "publication_validation": {
-    "run_mapping": "102 of 102 matched accepted records",
-    "source_files": "43121 of 43121 matched source hashes",
-    "snapshots_with_verified_recorded_hash": 119,
+    "run_mapping": "103 of 103 matched accepted records",
+    "source_files": "43647 of 43647 matched source hashes",
+    "snapshots_with_verified_recorded_hash": 126,
     "snapshots_without_recorded_hash": 595
   }
 }
